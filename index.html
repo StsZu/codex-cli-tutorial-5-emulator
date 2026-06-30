@@ -328,6 +328,22 @@
       border-left-color: var(--purple);
     }
     .result-box.purple .result-title { color: var(--purple); }
+    .btn-test {
+      background: rgba(210, 153, 34, 0.15);
+      border-color: var(--yellow);
+      color: #e6c87a;
+    }
+    .btn-test:hover { background: rgba(210, 153, 34, 0.28); }
+    .btn-test.active {
+      background: var(--yellow);
+      color: #0d1117;
+      border-color: var(--yellow);
+    }
+    .test-question {
+      color: #e6c87a;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -363,6 +379,7 @@
         </div>
 
         <div class="actions">
+          <button class="btn btn-test" id="btnTest" type="button">Режим тестування</button>
           <button class="btn btn-primary" id="btnStart">Нова сесія</button>
           <button class="btn" id="btnClear">Очистити</button>
         </div>
@@ -503,7 +520,14 @@
         frontend: new Set(),
         backend: new Set()
       },
-      selectedSession: null
+      selectedSession: null,
+      testMode: {
+        active: false,
+        queue: [],
+        index: 0,
+        correct: 0,
+        wrong: 0
+      }
     };
 
     const livePanel = document.getElementById("livePanel");
@@ -565,6 +589,135 @@
       livePanel.innerHTML = viewChunks.join("");
       livePanel.scrollTop = 0;
       if (statusText) outputStatus.textContent = statusText;
+    }
+
+    function shuffleArray(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function buildTestQueue() {
+      const seen = new Set();
+      const items = [];
+      for (const mod of Object.values(MODULES)) {
+        for (const cmd of mod.commands) {
+          if (!seen.has(cmd) && UK_HINTS[cmd]) {
+            seen.add(cmd);
+            items.push({ cmd, hint: UK_HINTS[cmd] });
+          }
+        }
+      }
+      return shuffleArray(items);
+    }
+
+    function updateTestButton() {
+      const btn = document.getElementById("btnTest");
+      if (state.testMode.active) {
+        btn.textContent = "Зупинити тест";
+        btn.classList.add("active");
+      } else {
+        btn.textContent = "Режим тестування";
+        btn.classList.remove("active");
+      }
+    }
+
+    function showTestQuestion() {
+      const tm = state.testMode;
+      const q = tm.queue[tm.index];
+      if (!q) {
+        finishTestMode();
+        return;
+      }
+      state.inCodex = true;
+      beginView(null);
+      printResult(`Питання ${tm.index + 1} / ${tm.queue.length}`, `
+        <div class="test-question">${esc(q.hint)}</div>
+        <span class="line-hl">Яка це команда?</span><br>
+        <span class="line-muted">Введи відповідь у поле нижче (напр. <span class="line-cmd">/init</span>)</span>
+      `, "purple");
+      flushView(`test> · ${tm.index + 1}/${tm.queue.length} · ✓${tm.correct} ✗${tm.wrong}`);
+      promptLabel.textContent = "test>";
+      cmdInput.placeholder = "Введи команду…";
+      cmdInput.focus();
+    }
+
+    function startTestMode() {
+      closeResumeModal();
+      state.testMode = {
+        active: true,
+        queue: buildTestQueue(),
+        index: 0,
+        correct: 0,
+        wrong: 0
+      };
+      updateTestButton();
+      showTestQuestion();
+    }
+
+    function stopTestMode() {
+      if (!state.testMode.active) return;
+      state.testMode.active = false;
+      updateTestButton();
+      promptLabel.textContent = "codex>";
+      cmdInput.placeholder = "/status, /model, /quit …";
+      beginView(null);
+      printResult("Тест зупинено", `
+        <span class="line-muted">Відповідей: ${state.testMode.correct + state.testMode.wrong}</span><br>
+        <span class="line-ok">✓ ${state.testMode.correct}</span> · <span class="line-err">✗ ${state.testMode.wrong}</span>
+      `, "warn");
+      flushView("codex> · тест зупинено");
+    }
+
+    function finishTestMode() {
+      const tm = state.testMode;
+      const total = tm.queue.length;
+      const pct = total ? Math.round((tm.correct / total) * 100) : 0;
+      tm.active = false;
+      updateTestButton();
+      promptLabel.textContent = "codex>";
+      cmdInput.placeholder = "/status, /model, /quit …";
+      beginView(null);
+      printResult("Тест завершено!", `
+        <span class="line-ok">✓ Правильно: ${tm.correct} / ${total}</span><br>
+        <span class="line-err">✗ Помилок: ${tm.wrong}</span><br>
+        <span class="line-hl">Результат: ${pct}%</span><br><br>
+        <span class="line-muted">${pct === 100 ? "Ідеально! Усі команди знаєш." : pct >= 70 ? "Добре! Повтори складніші команди." : "Спробуй ще раз або пройди розділи вручну."}</span>
+      `, pct === 100 ? "ok" : pct >= 70 ? "purple" : "warn");
+      flushView(`codex> · тест: ${pct}%`);
+    }
+
+    function handleTestAnswer(raw) {
+      const cmd = raw.trim();
+      if (!cmd) return;
+
+      const tm = state.testMode;
+      const q = tm.queue[tm.index];
+      if (!q) return;
+
+      beginView(cmd);
+      const match = cmd.toLowerCase() === q.cmd.toLowerCase();
+
+      if (match) {
+        tm.correct++;
+        printResult("Правильно!", `
+          <span class="line-ok">✓ ${esc(q.cmd)}</span>
+        `, "ok");
+        tm.index++;
+        flushView(`test> · ✓ ${tm.correct}/${tm.queue.length}`);
+        setTimeout(showTestQuestion, 450);
+      } else {
+        tm.wrong++;
+        printResult("Неправильно", `
+          <span class="line-err">✗ Твоя відповідь: ${esc(cmd)}</span><br>
+          <span class="line-ok">Правильно: ${esc(q.cmd)}</span><br>
+          <span class="line-muted">Спробуй ще раз для цього питання.</span>
+        `, "warn");
+        flushView(`test> · ✗ спробуй знову`);
+      }
     }
 
     function markTried(cmd) {
@@ -1054,6 +1207,11 @@
       const cmd = raw.trim();
       if (!cmd) return;
 
+      if (state.testMode.active) {
+        handleTestAnswer(cmd);
+        return;
+      }
+
       state.history.push(cmd);
       state.histIdx = state.history.length;
 
@@ -1151,7 +1309,13 @@
       }
     });
 
+    document.getElementById("btnTest").addEventListener("click", () => {
+      if (state.testMode.active) stopTestMode();
+      else startTestMode();
+    });
+
     document.getElementById("btnStart").addEventListener("click", () => {
+      if (state.testMode.active) stopTestMode();
       Object.keys(state.triedByModule).forEach(k => state.triedByModule[k].clear());
       state.currentModule = "lesson5";
       state.agentsMdExists = false;
@@ -1174,7 +1338,10 @@
       if (e.target.id === "resumeModal") closeResumeModal();
     });
     document.addEventListener("keydown", e => {
-      if (e.key === "Escape") closeResumeModal();
+      if (e.key === "Escape") {
+        if (state.testMode.active) stopTestMode();
+        else closeResumeModal();
+      }
     });
 
     welcomeShell(true);
