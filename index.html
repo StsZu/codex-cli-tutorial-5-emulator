@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Codex CLI Emulator — Multi-Module Training</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --cyan: #39c5cf;
+      --yellow: #d29922;
+      --blue: #58a6ff;
+      --purple: #a371f7;
+      --red: #f85149;
+      --prompt: #7ee787;
+      --font: "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2332 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: Inter, system-ui, sans-serif;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      margin-bottom: 16px;
+    }
+    header h1 {
+      font-size: 1.25rem;
+      margin: 0 0 6px;
+      font-weight: 600;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { order: 2; }
+    }
+    .sidebar, .terminal-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .sidebar {
+      padding: 14px;
+      font-size: 0.82rem;
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 10px;
+    }
+    .cmd-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 16px;
+    }
+    .cmd-list li {
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .cmd-list li:hover { background: #21262d; }
+    .cmd-list li.done { color: var(--green); }
+    .cmd-list li.done::after { content: "✓"; }
+    .cmd-list code { color: var(--cyan); }
+    .progress {
+      height: 6px;
+      background: #21262d;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .progress > div {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .stats { color: var(--muted); font-size: 0.78rem; }
+    .hint-box {
+      background: #21262d;
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.78rem;
+    }
+    .terminal-wrap {
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+    }
+    .term-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .dots { display: flex; gap: 6px; }
+    .dots span {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .dots span:nth-child(1) { background: #ff5f57; }
+    .dots span:nth-child(2) { background: #febc2e; }
+    .dots span:nth-child(3) { background: #28c840; }
+    .term-title { flex: 1; text-align: center; font-family: var(--font); }
+    .output {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      min-height: 0;
+      overflow: hidden;
+      font-family: var(--font);
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+    .output-status {
+      flex-shrink: 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .live-panel {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      word-break: break-word;
+    }
+    .line-user { color: var(--prompt); }
+    .line-sys { color: var(--text); }
+    .line-muted { color: var(--muted); }
+    .line-ok { color: var(--green); }
+    .line-warn { color: var(--yellow); }
+    .line-err { color: var(--red); }
+    .line-cmd { color: var(--cyan); }
+    .line-hl { color: var(--blue); }
+    .line-uk-hint {
+      color: #e6c87a;
+      font-size: 0.82rem;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(230, 200, 122, 0.25);
+      line-height: 1.5;
+    }
+    .line-uk-hint.compact {
+      margin-top: 2px;
+      margin-bottom: 8px;
+      padding-top: 0;
+      border-top: none;
+      padding-left: 14px;
+    }
+    .result-box {
+      margin: 8px 0 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #238636;
+      background: rgba(35, 134, 54, 0.12);
+      border-left: 4px solid var(--green);
+    }
+    .result-box.warn {
+      border-color: var(--yellow);
+      background: rgba(210, 153, 34, 0.1);
+      border-left-color: var(--yellow);
+    }
+    .result-title {
+      color: var(--green);
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.82rem;
+    }
+    .result-box.warn .result-title { color: var(--yellow); }
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      background: #0d1117;
+    }
+    .prompt-label {
+      color: var(--prompt);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    #cmdInput {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.9rem;
+    }
+    .btn {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+    .btn:hover { background: #30363d; }
+    .btn-primary {
+      background: #238636;
+      border-color: #2ea043;
+    }
+    .btn-primary:hover { background: #2ea043; }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    kbd {
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: var(--font);
+      font-size: 0.75rem;
+    }
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      padding: 18px;
+    }
+    .modal h3 { margin: 0 0 12px; font-size: 1rem; }
+    .session-item {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.82rem;
+    }
+    .session-item:hover, .session-item.selected {
+      border-color: var(--blue);
+      background: #1c2128;
+    }
+    .session-item small { color: var(--muted); display: block; margin-top: 4px; }
+    .session-item .section-tag {
+      color: var(--purple);
+      font-size: 0.72rem;
+      margin-top: 4px;
+      display: block;
+    }
+    .module-badge {
+      display: inline-block;
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      color: var(--cyan);
+      margin-bottom: 10px;
+      font-family: var(--font);
+    }
+    .module-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .module-nav button {
+      text-align: left;
+      font-family: var(--font);
+      font-size: 0.75rem;
+    }
+    .module-nav button.active {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+    .result-box.purple {
+      border-color: var(--purple);
+      background: rgba(163, 113, 247, 0.1);
+      border-left-color: var(--purple);
+    }
+    .result-box.purple .result-title { color: var(--purple); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Codex CLI Emulator — Багаторівневе тренування</h1>
+      <p>
+        <strong>Урок 5</strong> — базові slash-команди. <strong>codex resume</strong> відкриває окремі розділи
+        (Документація, Frontend, Backend) з власними командами. Сесія Codex активна одразу.
+        <kbd>↑</kbd>/<kbd>↓</kbd> — історія, <kbd>Tab</kbd> — автодоповнення.
+      </p>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="module-badge" id="moduleBadge">Урок 5 — CLI основи</div>
+
+        <h2>Прогрес розділу</h2>
+        <div class="progress"><div id="progressBar"></div></div>
+        <div class="stats" id="progressText">0 / 0 команд</div>
+
+        <h2>Розділи</h2>
+        <div class="module-nav" id="moduleNav"></div>
+
+        <h2 id="cmdListTitle">Команди розділу</h2>
+        <ul class="cmd-list" id="cmdChecklist"></ul>
+
+        <div class="hint-box" id="hintBox">
+          <strong>Завдання:</strong> виконай усі команди поточного розділу.<br><br>
+          <strong>База:</strong> <code>/status</code>, <code>/init</code>, <code>/</code><br>
+          <strong>Інші розділи:</strong> <code>codex resume</code> → обери сесію<br>
+          <strong>Повернення:</strong> кнопка «Урок 5» зліва або <code>/sessions</code>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="btnStart">Нова сесія</button>
+          <button class="btn" id="btnClear">Очистити</button>
+        </div>
+      </aside>
+
+      <section class="terminal-wrap">
+        <div class="term-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="term-title">codex — demo-project — zsh</div>
+        </div>
+        <div class="output" aria-live="polite">
+          <div class="output-status" id="outputStatus">codex&gt; · вивід оновлюється на місці</div>
+          <div class="live-panel" id="livePanel"></div>
+        </div>
+        <form class="input-row" id="cmdForm" autocomplete="off">
+          <span class="prompt-label" id="promptLabel">$</span>
+          <input id="cmdInput" type="text" spellcheck="false" placeholder="codex або /status …" autofocus />
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="resumeModal">
+    <div class="modal">
+      <h3>codex resume — оберіть сесію / розділ</h3>
+      <input type="text" id="resumeSearch" placeholder="Пошук (напр. summary)…" style="width:100%;margin-bottom:12px;padding:8px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);" />
+      <div id="sessionList"></div>
+      <div class="actions" style="margin-top:14px;">
+        <button class="btn btn-primary" id="resumeConfirm">Enter — відновити</button>
+        <button class="btn" id="resumeCancel">Esc — скасувати</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MODULES = {
+      lesson5: {
+        id: "lesson5",
+        title: "Урок 5 — CLI основи",
+        termTitle: "codex — demo-project — zsh",
+        intro: "Базовий набір slash-команд з уроку 5 + додаткові утиліти CLI.",
+        commands: [
+          "/init", "/status", "/approvals", "/model", "/new", "/compact",
+          "/diff", "/mention", "/mcp", "/logout", "/quit", "codex resume",
+          "/history", "/branch", "/tokens", "/sandbox", "/export", "/sessions"
+        ]
+      },
+      docs: {
+        id: "docs",
+        title: "📄 Документація & README",
+        termTitle: "codex — demo-app — docs branch",
+        intro: "Сесія «Add README summary section» — працюємо з markdown і експортом.",
+        commands: [
+          "/mention README.md", "/diff", "/compact", "/export", "/branch",
+          "/history", "/status", "/init", "/review"
+        ]
+      },
+      frontend: {
+        id: "frontend",
+        title: "🎨 Frontend & CSS",
+        termTitle: "codex — demo-app — fix/navbar",
+        intro: "Сесія «Fix navbar responsive layout» — стилі, review і sandbox.",
+        commands: [
+          "/mention src/navbar.css", "/diff", "/review", "/undo", "/sandbox",
+          "/approvals read-only", "/compact", "/status"
+        ]
+      },
+      backend: {
+        id: "backend",
+        title: "🔐 Backend & Auth",
+        termTitle: "codex — demo-app — refactor/auth",
+        intro: "Сесія «Refactor auth middleware» — MCP, config і токени.",
+        commands: [
+          "/mention auth/middleware.ts", "/mcp", "/config", "/tokens",
+          "/approvals full", "/diff", "/status", "/compact"
+        ]
+      }
+    };
+
+    const UK_HINTS = {
+      "/init": "Створює файл agents.md — інструкції для агента в цьому проєкті. Запускай на початку роботи з репозиторієм.",
+      "/status": "Показує зведення сесії: робоча папка, режим дозволів, наявність agents.md, модель і витрати токенів.",
+      "/approvals": "Керує тим, чи агент діє сам (auto), лише читає (read-only), чи має повний доступ (full).",
+      "/model": "Вибір моделі OpenAI та рівня reasoning (low / medium / high) для поточної сесії.",
+      "/new": "Очищує контекст розмови і починає нову сесію Codex — ніби відкрив проєкт заново.",
+      "/compact": "Стиснення довгої історії чату в короткий summary, щоб не переповнювати контекст.",
+      "/diff": "Показує git diff змін у проєкті, не виходячи з Codex — зручно перед комітом.",
+      "/mention": "Додає файл до контексту агента. Швидша альтернатива — @ім'я_файлу прямо в промпті.",
+      "/mcp": "Список підключених MCP-серверів (зовнішні інструменти: файли, git, API тощо).",
+      "/logout": "Вихід з облікового запису Codex CLI на цій машині.",
+      "/quit": "Завершує поточну сесію Codex і повертає в звичайний shell.",
+      "codex resume": "Відновлює попередню збережену сесію зі списку — продовжуєш роботу з того ж контексту.",
+      "codex": "Запускає інтерактивну сесію Codex CLI у поточній папці проєкту.",
+      "/": "Повний список вбудованих slash-команд — швидка довідка без виходу з сесії.",
+      "welcome": "Тренажер емулює Codex CLI без реального API — тренуй команди зі списку зліва.",
+      "shell-help": "У shell спочатку вводиш codex або одразу slash-команду, якщо сесія вже активна.",
+      "unknown-shell": "У звичайному shell працюють лише codex, codex resume та help — решта через сесію Codex.",
+      "unknown-slash": "Такої slash-команди немає в уроці 5. Натисни / для списку доступних.",
+      "prompt": "Звичайний текст тут — промпт для агента. Slash-команди починаються з /.",
+      "ctrl-c": "Ctrl+C перериває поточну дію, але в тренажері сесія лишається активною.",
+      "/history": "Показує останні промпти та slash-команди в поточній сесії — зручно згадати, що вже робив.",
+      "/branch": "Показує поточну git-гілку та стан робочого дерева.",
+      "/tokens": "Детальна статистика витрат токенів: input, output, cache, за сесію.",
+      "/sandbox": "Налаштування sandbox: де Codex може писати файли і запускати команди.",
+      "/export": "Експорт транскрипту сесії у файл (markdown/json) для архіву або шерінгу.",
+      "/sessions": "Список збережених сесій і швидкий перехід між розділами тренажера.",
+      "/review": "Запит code review від агента — перевірка diff перед merge.",
+      "/undo": "Скасовує останню зміну файлу, яку зробив агент (якщо ще не закомічено).",
+      "/config": "Показує локальний конфіг Codex CLI: модель за замовч., шляхи, MCP.",
+      "/mention README.md": "Додає README.md у контекст — ідеально для доповнення документації.",
+      "/mention src/navbar.css": "Підтягує CSS navbar у контекст для правок responsive layout.",
+      "/mention auth/middleware.ts": "Контекст middleware — рефакторинг auth без втрати логіки.",
+      "/approvals read-only": "Режим лише читання: агент аналізує CSS, але питає перед правками.",
+      "/approvals full": "Повний доступ + мережа — для інтеграцій і тестів auth.",
+      "module-switch": "Ти в новому розділі тренажера. Список команд зліва оновився — проходь їх по черзі.",
+      "module-wrong": "Ця команда належить іншому розділу. Спробуй codex resume або кнопку розділу зліва."
+    };
+
+    const SESSIONS = [
+      { id: 1, title: "Add README summary section", tag: "summary", ago: "2h ago", moduleId: "docs", sectionLabel: "📄 Документація & README" },
+      { id: 2, title: "Fix navbar responsive layout", tag: "navbar", ago: "1d ago", moduleId: "frontend", sectionLabel: "🎨 Frontend & CSS" },
+      { id: 3, title: "Refactor auth middleware", tag: "auth", ago: "3d ago", moduleId: "backend", sectionLabel: "🔐 Backend & Auth" }
+    ];
+
+    const state = {
+      inCodex: false,
+      currentModule: "lesson5",
+      approvalMode: "auto",
+      model: "gpt-5-codex (medium reasoning)",
+      agentsMdExists: false,
+      compacted: false,
+      undoAvailable: false,
+      history: [],
+      histIdx: -1,
+      triedByModule: {
+        lesson5: new Set(),
+        docs: new Set(),
+        frontend: new Set(),
+        backend: new Set()
+      },
+      selectedSession: null
+    };
+
+    const livePanel = document.getElementById("livePanel");
+    const outputStatus = document.getElementById("outputStatus");
+    const cmdInput = document.getElementById("cmdInput");
+    let viewChunks = [];
+    const promptLabel = document.getElementById("promptLabel");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    const cmdChecklist = document.getElementById("cmdChecklist");
+    const moduleBadge = document.getElementById("moduleBadge");
+    const moduleNav = document.getElementById("moduleNav");
+    const termTitle = document.querySelector(".term-title");
+
+    function getModule() {
+      return MODULES[state.currentModule] || MODULES.lesson5;
+    }
+
+    function getCurrentCommands() {
+      return getModule().commands;
+    }
+
+    function getTried() {
+      return state.triedByModule[state.currentModule];
+    }
+
+    function esc(s) {
+      return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    function beginView(cmd = null) {
+      viewChunks = [];
+      if (cmd !== null) {
+        const prefix = state.inCodex ? "codex>" : "$";
+        viewChunks.push(`<div class="line-user">${esc(prefix)} ${esc(cmd)}</div>`);
+      }
+    }
+
+    function print(html, cls = "line-sys") {
+      viewChunks.push(`<div class="${cls}">${html}</div>`);
+    }
+
+    function ukHint(text, compact = false) {
+      const cls = compact ? "line-uk-hint compact" : "line-uk-hint";
+      return `<div class="${cls}">${esc(text)}</div>`;
+    }
+
+    function printResult(title, body, type = "ok", hint = null) {
+      const cls = type === "warn" ? "result-box warn"
+        : type === "purple" ? "result-box purple"
+        : "result-box";
+      const hintHtml = hint ? ukHint(hint) : "";
+      viewChunks.push(
+        `<div class="${cls}"><div class="result-title">${esc(title)}</div>${body}${hintHtml}</div>`
+      );
+    }
+
+    function flushView(statusText) {
+      livePanel.innerHTML = viewChunks.join("");
+      livePanel.scrollTop = 0;
+      if (statusText) outputStatus.textContent = statusText;
+    }
+
+    function markTried(cmd) {
+      const norm = normalizeCmd(cmd);
+      if (getCurrentCommands().includes(norm)) {
+        getTried().add(norm);
+        updateProgress();
+        updateModuleNav();
+      }
+    }
+
+    function isInCurrentModule(cmd) {
+      const lower = cmd.trim().toLowerCase();
+      return getCurrentCommands().some(x => x.toLowerCase() === lower);
+    }
+
+    function findModuleForCommand(cmd) {
+      const lower = cmd.trim().toLowerCase();
+      for (const mod of Object.values(MODULES)) {
+        if (mod.commands.some(x => x.toLowerCase() === lower)) return mod.id;
+      }
+      const base = cmd.split(/\s+/)[0].toLowerCase();
+      for (const mod of Object.values(MODULES)) {
+        if (mod.commands.some(x => x.toLowerCase() === base)) return mod.id;
+      }
+      return null;
+    }
+
+    function ensureCodex(auto = false) {
+      if (state.inCodex) return;
+      state.inCodex = true;
+      promptLabel.textContent = "codex>";
+      cmdInput.placeholder = "/status, /model, /quit …";
+      if (auto) {
+        print(`<span class="line-ok">● Codex session auto-started (training mode)</span>`);
+      }
+    }
+
+    function normalizeCmd(raw) {
+      const c = raw.trim();
+      const lower = c.toLowerCase();
+      if (lower === "codex resume" || lower.startsWith("codex resume")) return "codex resume";
+      const exactCurrent = getCurrentCommands().find(x => x.toLowerCase() === lower);
+      if (exactCurrent) return exactCurrent;
+      for (const mod of Object.values(MODULES)) {
+        const exact = mod.commands.find(x => x.toLowerCase() === lower);
+        if (exact) return exact;
+      }
+      if (c.startsWith("/")) return c.split(/\s+/)[0].toLowerCase();
+      return lower;
+    }
+
+    function updateProgress() {
+      const cmds = getCurrentCommands();
+      const n = getTried().size;
+      const total = cmds.length;
+      progressBar.style.width = total ? `${(n / total) * 100}%` : "0%";
+      progressText.textContent = `${n} / ${total} команд`;
+      moduleBadge.textContent = getModule().title;
+      termTitle.textContent = getModule().termTitle;
+      cmdChecklist.querySelectorAll("li").forEach(li => {
+        li.classList.toggle("done", getTried().has(li.dataset.cmd));
+      });
+    }
+
+    function updateModuleNav() {
+      moduleNav.innerHTML = Object.values(MODULES).map(mod => {
+        const tried = state.triedByModule[mod.id];
+        const done = tried.size;
+        const total = mod.commands.length;
+        const pct = total ? Math.round((done / total) * 100) : 0;
+        const active = mod.id === state.currentModule ? " active" : "";
+        return `<button type="button" class="btn${active}" data-module="${mod.id}" title="${esc(mod.intro)}">${esc(mod.title)} · ${done}/${total} (${pct}%)</button>`;
+      }).join("");
+      moduleNav.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (btn.dataset.module === "lesson5") switchModule("lesson5");
+          else {
+            const session = SESSIONS.find(s => s.moduleId === btn.dataset.module);
+            if (session) resumeIntoModule(session, false);
+            else switchModule(btn.dataset.module);
+          }
+        });
+      });
+    }
+
+    function buildChecklist() {
+      const cmds = getCurrentCommands();
+      cmdChecklist.innerHTML = cmds.map(cmd =>
+        `<li data-cmd="${esc(cmd)}" title="Клік — виконати"><code>${esc(cmd)}</code></li>`
+      ).join("");
+      cmdChecklist.querySelectorAll("li").forEach(li => {
+        li.addEventListener("click", () => {
+          execute(li.dataset.cmd);
+          cmdInput.value = "";
+          cmdInput.focus();
+        });
+      });
+      updateProgress();
+      updateModuleNav();
+    }
+
+    function switchModule(moduleId, showWelcome = true) {
+      if (!MODULES[moduleId]) return;
+      state.currentModule = moduleId;
+      buildChecklist();
+      if (!showWelcome) return;
+      beginView(null);
+      const mod = getModule();
+      printResult(`Розділ: ${mod.title}`, `
+        <span class="line-muted">${esc(mod.intro)}</span><br><br>
+        <span class="line-hl">Команд у розділі:</span> ${mod.commands.length}<br>
+        <span class="line-muted">Клікай команди зліва або вводь у термінал.</span>
+      `, "purple", UK_HINTS["module-switch"]);
+      flushView(`codex> · ${mod.title}`);
+    }
+
+    function resumeIntoModule(session, fromModal = true) {
+      if (fromModal) closeResumeModal();
+      state.inCodex = true;
+      state.currentModule = session.moduleId;
+      promptLabel.textContent = "codex>";
+      buildChecklist();
+      beginView("codex resume");
+      const mod = getModule();
+      printResult(`codex resume → ${mod.title}`, `
+        <span class="line-ok">✓ Resumed: «${esc(session.title)}»</span><br>
+        <span class="line-muted">${esc(session.sectionLabel)} · ${esc(session.tag)} · ${esc(session.ago)}</span><br><br>
+        <span class="line-hl">Контекст сесії (емуляція):</span><br>
+        <span class="line-muted">${esc(mod.intro)}</span><br><br>
+        ${mod.commands.slice(0, 4).map(c => `<span class="line-cmd">${esc(c)}</span>`).join(" · ")}
+        ${mod.commands.length > 4 ? `<br><span class="line-muted">…ще ${mod.commands.length - 4} команд у списку зліва</span>` : ""}
+      `, "purple", UK_HINTS["module-switch"]);
+      flushView(`codex> · ${session.title}`);
+      state.triedByModule.lesson5.add("codex resume");
+      updateModuleNav();
+    }
+
+    function welcomeShell(startInCodex = true) {
+      beginView(null);
+      print(`<span class="line-muted">Тренажер Codex CLI — Урок 5 (емуляція, без реального API)</span>`);
+      if (startInCodex) {
+        state.inCodex = true;
+        promptLabel.textContent = "codex>";
+        cmdInput.placeholder = "/status, /model, /quit …";
+        print(`<span class="line-ok">● Codex session active</span>`);
+        printResult("Спробуй команди уроку", `
+          <span class="line-cmd">/init</span> · <span class="line-cmd">/status</span> · <span class="line-cmd">/sessions</span> · <span class="line-cmd">codex resume</span><br>
+          <span class="line-muted">codex resume відкриває 3 додаткові розділи з власними командами.</span>
+        `, "ok", UK_HINTS.welcome);
+        flushView("codex> · Урок 5 — введи команду");
+      } else {
+        print(`<span class="line-muted">Введи <span class="line-cmd">codex</span> або <span class="line-cmd">/status</span></span>`);
+        print(ukHint(UK_HINTS["shell-help"]));
+        flushView("$ · shell mode");
+      }
+    }
+
+    function startCodex(showBanner = true) {
+      state.inCodex = true;
+      promptLabel.textContent = "codex>";
+      cmdInput.placeholder = "/status, /model, /quit …";
+      if (showBanner) {
+        beginView("codex");
+        print(`<span class="line-ok">● Codex session started</span>`);
+        printResult("Спробуй команди уроку", `
+          <span class="line-cmd">/init</span> · <span class="line-cmd">/status</span> · <span class="line-cmd">/approvals</span> · <span class="line-cmd">/model</span><br>
+          <span class="line-cmd">/compact</span> · <span class="line-cmd">/diff</span> · <span class="line-cmd">/mcp</span> · <span class="line-cmd">/</span> — повний список
+        `, "ok", UK_HINTS.codex);
+        flushView("codex> · session started");
+      }
+    }
+
+    const ALL_SLASH_META = [
+      ["/init", "Create agents.md"], ["/status", "Session information"],
+      ["/approvals", "Approval mode settings"], ["/model", "Select OpenAI model"],
+      ["/new", "Start a new session"], ["/compact", "Compress chat history"],
+      ["/diff", "Show git diff"], ["/mention", "Add file to context"],
+      ["/mcp", "List MCP servers"], ["/logout", "Log out"], ["/quit", "Quit session"],
+      ["/history", "Recent prompts"], ["/branch", "Git branch info"],
+      ["/tokens", "Token usage detail"], ["/sandbox", "Sandbox settings"],
+      ["/export", "Export transcript"], ["/sessions", "List saved sessions"],
+      ["/review", "Request code review"], ["/undo", "Undo last agent edit"],
+      ["/config", "Show CLI config"]
+    ];
+
+    function listSlashCommands() {
+      print(`<span class="line-hl">Slash commands (розділ: ${esc(getModule().title)}):</span>`);
+      getCurrentCommands().filter(c => c.startsWith("/")).forEach(c => {
+        const meta = ALL_SLASH_META.find(([k]) => c === k || c.startsWith(k + " "))?.[1] || "Module command";
+        print(`  <span class="line-cmd">${esc(c.padEnd(22))}</span> <span class="line-muted">${meta}</span>`);
+        const hint = UK_HINTS[c] || UK_HINTS[c.split(/\s+/)[0]];
+        if (hint) print(ukHint(hint, true));
+      });
+    }
+
+    function moduleContext() {
+      const m = state.currentModule;
+      if (m === "docs") return { file: "README.md", branch: "docs/readme-summary", diff: "+## Summary\n+Project overview for new contributors." };
+      if (m === "frontend") return { file: "src/navbar.css", branch: "fix/navbar-responsive", diff: "+@media (max-width: 768px) { .nav-links { flex-direction: column; } }" };
+      if (m === "backend") return { file: "auth/middleware.ts", branch: "refactor/auth-middleware", diff: "-function authOld()\n+export async function authMiddleware()" };
+      return { file: "README.md", branch: "main", diff: "+## Summary" };
+    }
+
+    function handleSlash(cmd) {
+      const norm = normalizeCmd(cmd);
+      if (!isInCurrentModule(cmd)) {
+        const ownerModule = findModuleForCommand(cmd);
+        if (ownerModule && ownerModule !== state.currentModule) {
+          printResult("Команда з іншого розділу", `
+            <span class="line-muted">«${esc(cmd)}» належить розділу <span class="line-hl">${esc(MODULES[ownerModule].title)}</span>.</span><br>
+            <span class="line-muted">Виконай <span class="line-cmd">codex resume</span> або клікни розділ зліва.</span>
+          `, "warn", UK_HINTS["module-wrong"]);
+          return false;
+        }
+      }
+
+      const base = cmd.split(/\s+/)[0].toLowerCase();
+      const arg = cmd.slice(base.length).trim();
+      const ctx = moduleContext();
+      let success = true;
+
+      switch (base) {
+        case "/init":
+          state.agentsMdExists = true;
+          printResult("/init — agents.md created", `
+            <span class="line-ok">✓ File: agents.md</span><br>
+            <span class="line-muted">Agent instructions ready for this project.</span><br>
+            <span class="line-muted">Next lesson covers agent files in detail.</span>
+          `, "ok", UK_HINTS["/init"]);
+          break;
+
+        case "/status":
+          printResult("/status — session info", `
+            <span class="line-hl">Workspace</span><br>
+            Directory: <span class="line-cmd">~/Projects/demo-app</span><br>
+            Approval: <span class="line-ok">${state.approvalMode}</span> · Sandbox: workspace write only<br>
+            agents.md: <span class="line-ok">${state.agentsMdExists ? "present" : "not created — run /init"}</span><br><br>
+            <span class="line-hl">Model</span>: ${state.model}<br>
+            <span class="line-hl">Client</span>: codex-cli 0.42.0 (emulator)<br>
+            <span class="line-hl">Tokens</span>: in 12,400 · out 3,180
+          `, "ok", UK_HINTS["/status"]);
+          break;
+
+        case "/approvals":
+          if (["auto", "read-only", "full"].includes(arg)) {
+            state.approvalMode = arg === "full" ? "full access" : arg;
+            printResult("/approvals — mode updated", `
+              <span class="line-ok">✓ Approval mode: ${state.approvalMode}</span>
+            `, "ok", UK_HINTS["/approvals"]);
+          } else {
+            printResult("/approvals — available modes", `
+              <span class="line-cmd">auto</span> — read, edit, run in workspace<br>
+              <span class="line-cmd">read-only</span> — read only; ask before changes<br>
+              <span class="line-cmd">full</span> — full access + network<br><br>
+              Current: <span class="line-ok">${state.approvalMode}</span><br>
+              <span class="line-muted">Try: /approvals read-only</span>
+            `, "ok", UK_HINTS["/approvals"]);
+          }
+          break;
+
+        case "/model":
+          printResult("/model — select model", `
+            <span class="line-ok">● gpt-5-codex (medium reasoning)</span> ← selected<br>
+            ○ gpt-5-codex (low reasoning)<br>
+            ○ gpt-5-codex (high reasoning)<br>
+            <span class="line-muted">Emulator: selection shown only (no picker UI).</span>
+          `, "ok", UK_HINTS["/model"]);
+          break;
+
+        case "/new":
+          state.compacted = false;
+          printResult("/new — new session", `
+            <span class="line-ok">✓ Context cleared. Fresh Codex session started.</span>
+          `, "ok", UK_HINTS["/new"]);
+          break;
+
+        case "/compact":
+          state.compacted = true;
+          printResult("/compact — history compressed", `
+            <span class="line-ok">✓ Chat history squashed into summary.</span><br>
+            <span class="line-muted">Useful for long sessions — prevents context bloat.</span>
+          `, "ok", UK_HINTS["/compact"]);
+          break;
+
+        case "/diff":
+          printResult("/diff — git diff", `
+            <span class="line-muted">diff --git a/${esc(ctx.file)} b/${esc(ctx.file)}</span><br>
+            <span class="line-ok">${esc(ctx.diff)}</span><br>
+            <span class="line-muted">Branch: <span class="line-cmd">${esc(ctx.branch)}</span></span>
+          `, "ok", UK_HINTS["/diff"]);
+          break;
+
+        case "/mention":
+          if (norm !== "/mention" && UK_HINTS[norm]) {
+            printResult(`/mention — ${esc(arg || ctx.file)}`, `
+              <span class="line-ok">✓ Added to context: ${esc(arg || ctx.file)}</span><br>
+              <span class="line-muted">Module: ${esc(getModule().title)}</span>
+            `, "ok", UK_HINTS[norm]);
+          } else if (!arg) {
+            printResult("/mention — usage", `
+              <span class="line-muted">Example: /mention ${esc(ctx.file)}</span><br>
+              <span class="line-muted">Or use <span class="line-cmd">@${esc(ctx.file)}</span> in a prompt (faster).</span>
+            `, "warn", UK_HINTS["/mention"]);
+          } else {
+            printResult("/mention — file added", `
+              <span class="line-ok">✓ Added to context: ${esc(arg)}</span>
+            `, "ok", UK_HINTS["/mention"]);
+          }
+          break;
+
+        case "/mcp":
+          printResult("/mcp — MCP servers", `
+            <span class="line-ok">● filesystem</span> — local workspace<br>
+            <span class="line-ok">● git</span> — repository tools<br>
+            <span class="line-muted">Emulator: demo list only.</span>
+          `, "ok", UK_HINTS["/mcp"]);
+          break;
+
+        case "/logout":
+          printResult("/logout — signed out", `
+            <span class="line-ok">✓ Logged out of Codex CLI (emulated).</span><br>
+            <span class="line-muted">Training mode: session stays active for practice.</span>
+          `, "ok", UK_HINTS["/logout"]);
+          break;
+
+        case "/quit":
+          printResult("/quit — session closed", `
+            <span class="line-ok">✓ Codex session ended (emulated).</span><br>
+            <span class="line-muted">Training mode: prompt stays codex&gt; — continue practicing.</span>
+          `, "ok", UK_HINTS["/quit"]);
+          break;
+
+        case "/history":
+          printResult("/history — recent activity", `
+            <span class="line-muted">1.</span> Add summary section to README<br>
+            <span class="line-muted">2.</span> /compact — compressed 18 messages<br>
+            <span class="line-muted">3.</span> /diff — reviewed ${esc(ctx.file)}<br>
+            <span class="line-muted">Module:</span> ${esc(getModule().title)}
+          `, "ok", UK_HINTS["/history"]);
+          break;
+
+        case "/branch":
+          printResult("/branch — git branch", `
+            <span class="line-ok">● ${esc(ctx.branch)}</span> ← current<br>
+            <span class="line-muted">○ main</span><br>
+            <span class="line-muted">Working tree: 1 file changed (emulated)</span>
+          `, "ok", UK_HINTS["/branch"]);
+          break;
+
+        case "/tokens":
+          printResult("/tokens — usage detail", `
+            <span class="line-hl">Session</span>: in 24,800 · out 6,420 · cache 3,100<br>
+            <span class="line-hl">Model</span>: ${state.model}<br>
+            <span class="line-muted">Est. cost: $0.04 (emulator)</span>
+          `, "ok", UK_HINTS["/tokens"]);
+          break;
+
+        case "/sandbox":
+          printResult("/sandbox — workspace sandbox", `
+            <span class="line-ok">● workspace-write</span> — edits only in project folder<br>
+            <span class="line-muted">Network: ${state.approvalMode === "full access" ? "enabled" : "restricted"}</span><br>
+            <span class="line-muted">Shell commands: allowed in workspace</span>
+          `, "ok", UK_HINTS["/sandbox"]);
+          break;
+
+        case "/export":
+          printResult("/export — transcript saved", `
+            <span class="line-ok">✓ Exported: codex-session-${state.currentModule}-2026-06-30.md</span><br>
+            <span class="line-muted">Format: markdown · ${state.history.length} commands in history</span>
+          `, "ok", UK_HINTS["/export"]);
+          break;
+
+        case "/sessions":
+          printResult("/sessions — saved sessions & modules", `
+            ${SESSIONS.map(s => `<span class="line-cmd">${s.moduleId === state.currentModule ? "●" : "○"}</span> ${esc(s.sectionLabel)} — <span class="line-muted">${esc(s.title)}</span>`).join("<br>")}<br><br>
+            <span class="line-muted">● = поточний розділ · codex resume — перемикання</span>
+          `, "ok", UK_HINTS["/sessions"]);
+          break;
+
+        case "/review":
+          printResult("/review — code review", `
+            <span class="line-ok">✓ Review complete (emulated)</span><br>
+            <span class="line-warn">⚠</span> <span class="line-muted">Consider extracting media query to shared breakpoint mixin.</span><br>
+            <span class="line-ok">✓</span> <span class="line-muted">No security issues in ${esc(ctx.file)}.</span>
+          `, "ok", UK_HINTS["/review"]);
+          break;
+
+        case "/undo":
+          if (state.undoAvailable || state.currentModule === "frontend") {
+            state.undoAvailable = false;
+            printResult("/undo — reverted", `
+              <span class="line-ok">✓ Reverted last edit in ${esc(ctx.file)}</span>
+            `, "ok", UK_HINTS["/undo"]);
+          } else {
+            printResult("/undo — nothing to undo", `
+              <span class="line-muted">No recent agent edits in this session.</span>
+            `, "warn", UK_HINTS["/undo"]);
+          }
+          break;
+
+        case "/config":
+          printResult("/config — CLI config", `
+            <span class="line-hl">default_model</span>: gpt-5-codex<br>
+            <span class="line-hl">approval</span>: ${state.approvalMode}<br>
+            <span class="line-hl">mcp</span>: filesystem, git<br>
+            <span class="line-hl">module</span>: ${esc(getModule().title)}
+          `, "ok", UK_HINTS["/config"]);
+          break;
+
+        default:
+          if (cmd === "/" || cmd === "/help") {
+            listSlashCommands();
+          } else if (base === "/approvals" && ["read-only", "full"].includes(arg)) {
+            state.approvalMode = arg === "full" ? "full access" : arg;
+            const hintKey = norm;
+            printResult("/approvals — mode updated", `
+              <span class="line-ok">✓ Approval mode: ${state.approvalMode}</span><br>
+              <span class="line-muted">Module: ${esc(getModule().title)}</span>
+            `, "ok", UK_HINTS[hintKey] || UK_HINTS["/approvals"]);
+          } else {
+            success = false;
+            printResult("Невідома команда", `
+              <span class="line-muted">${esc(base)} — немає в розділі «${esc(getModule().title)}».</span><br>
+              Введи <span class="line-cmd">/</span> для списку команд.
+            `, "warn", UK_HINTS["unknown-slash"]);
+          }
+      }
+      if (success && getCurrentCommands().includes(norm)) return norm;
+      if (success && (cmd === "/" || cmd === "/help")) return "/";
+      return success;
+    }
+
+    function showResumePicker() {
+      printResult("codex resume — оберіть сесію", `
+        <span class="line-muted">У списку знайди потрібну сесію або введи пошук (напр. summary).</span><br>
+        <span class="line-muted">Enter — відновити · Esc — скасувати</span>
+      `, "ok", UK_HINTS["codex resume"]);
+      flushView("codex> · codex resume");
+      openResumeModal();
+    }
+
+    function openResumeModal() {
+      const modal = document.getElementById("resumeModal");
+      const list = document.getElementById("sessionList");
+      const search = document.getElementById("resumeSearch");
+      state.selectedSession = SESSIONS[0];
+
+      function render(filter = "") {
+        const f = filter.toLowerCase();
+        const items = SESSIONS.filter(s =>
+          !f || s.title.toLowerCase().includes(f) || s.tag.includes(f)
+        );
+        list.innerHTML = items.map(s =>
+          `<div class="session-item ${state.selectedSession?.id === s.id ? "selected" : ""}" data-id="${s.id}">
+            ${esc(s.title)}
+            <span class="section-tag">${esc(s.sectionLabel)}</span>
+            <small>${s.tag} · ${s.ago} · ${state.triedByModule[s.moduleId].size}/${MODULES[s.moduleId].commands.length} команд</small>
+          </div>`
+        ).join("") || `<div class="line-muted">No sessions match "${esc(filter)}"</div>`;
+
+        list.querySelectorAll(".session-item").forEach(el => {
+          el.addEventListener("click", () => {
+            state.selectedSession = SESSIONS.find(x => x.id === +el.dataset.id);
+            render(search.value);
+          });
+        });
+      }
+
+      search.value = "";
+      render();
+      search.oninput = () => render(search.value);
+      modal.classList.add("open");
+      search.focus();
+    }
+
+    function closeResumeModal() {
+      document.getElementById("resumeModal").classList.remove("open");
+    }
+
+    function confirmResume() {
+      if (!state.selectedSession) return;
+      resumeIntoModule(state.selectedSession, true);
+    }
+
+    function execute(raw) {
+      const cmd = raw.trim();
+      if (!cmd) return;
+
+      state.history.push(cmd);
+      state.histIdx = state.history.length;
+
+      if (cmd.startsWith("/")) ensureCodex(false);
+
+      if (cmd === "clear") {
+        welcomeShell(true);
+        return;
+      }
+
+      beginView(cmd);
+
+      if (cmd.startsWith("/")) {
+        const result = handleSlash(cmd);
+        flushView(`codex> · ${getModule().title} · ${cmd}`);
+        if (result !== false) markTried(typeof result === "string" ? result : cmd);
+        return;
+      }
+
+      if (!state.inCodex) {
+        if (cmd === "codex") {
+          startCodex();
+          return;
+        }
+        if (cmd === "codex resume" || cmd.startsWith("codex resume")) {
+          showResumePicker();
+          return;
+        }
+        if (cmd === "help") {
+          printResult("Довідка shell", `
+            <span class="line-cmd">codex</span> · <span class="line-cmd">codex resume</span> · <span class="line-cmd">/status</span>
+          `, "ok", UK_HINTS["shell-help"]);
+          flushView("$ · help");
+          return;
+        }
+        printResult("Shell підказка", `
+          <span class="line-muted">Команда «${esc(cmd)}» — не shell-команда.</span><br>
+          Спробуй <span class="line-cmd">/status</span> або <span class="line-cmd">codex</span>
+        `, "warn", UK_HINTS["unknown-shell"]);
+        flushView("$ · unknown command");
+        return;
+      }
+
+      if (cmd === "codex resume") {
+        showResumePicker();
+        return;
+      }
+
+      printResult("Codex prompt (емуляція)", `
+        <span class="line-ok">✓ Прийнято: «${esc(cmd)}»</span><br>
+        <span class="line-muted">Відповідь AI не емулюється — тренуй slash-команди.</span>
+      `, "ok", UK_HINTS.prompt);
+      flushView(`codex> · prompt`);
+    }
+
+    function getCompletions() {
+      return ["codex", "codex resume", ...getCurrentCommands(), "/"];
+    }
+
+    document.getElementById("cmdForm").addEventListener("submit", e => {
+      e.preventDefault();
+      execute(cmdInput.value);
+      cmdInput.value = "";
+    });
+
+    cmdInput.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (state.history.length) {
+          state.histIdx = Math.max(0, state.histIdx - 1);
+          cmdInput.value = state.history[state.histIdx] || "";
+        }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (state.histIdx < state.history.length - 1) {
+          state.histIdx++;
+          cmdInput.value = state.history[state.histIdx] || "";
+        } else {
+          state.histIdx = state.history.length;
+          cmdInput.value = "";
+        }
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        const val = cmdInput.value;
+        const match = getCompletions().find(c => c.startsWith(val) && c !== val);
+        if (match) cmdInput.value = match;
+      } else if (e.ctrlKey && e.key === "c") {
+        e.preventDefault();
+        if (state.inCodex) {
+          beginView(null);
+          print(`<span class="line-muted">^C — interrupted (training: stay in codex&gt;)</span>`);
+          print(ukHint(UK_HINTS["ctrl-c"]));
+          flushView("codex> · interrupted");
+        }
+      }
+    });
+
+    document.getElementById("btnStart").addEventListener("click", () => {
+      Object.keys(state.triedByModule).forEach(k => state.triedByModule[k].clear());
+      state.currentModule = "lesson5";
+      state.agentsMdExists = false;
+      state.compacted = false;
+      state.undoAvailable = false;
+      state.approvalMode = "auto";
+      welcomeShell(true);
+      buildChecklist();
+      cmdInput.focus();
+    });
+
+    document.getElementById("btnClear").addEventListener("click", () => {
+      welcomeShell(true);
+      buildChecklist();
+    });
+
+    document.getElementById("resumeConfirm").addEventListener("click", confirmResume);
+    document.getElementById("resumeCancel").addEventListener("click", closeResumeModal);
+    document.getElementById("resumeModal").addEventListener("click", e => {
+      if (e.target.id === "resumeModal") closeResumeModal();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") closeResumeModal();
+    });
+
+    welcomeShell(true);
+    buildChecklist();
+  </script>
+</body>
+</html>
