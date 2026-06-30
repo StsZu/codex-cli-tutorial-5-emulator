@@ -351,8 +351,8 @@
     <header>
       <h1>Codex CLI Emulator — Багаторівневе тренування</h1>
       <p>
-        <strong>Урок 5</strong> — базові slash-команди. <strong>codex resume</strong> відкриває окремі розділи
-        (Документація, Frontend, Backend) з власними командами. Сесія Codex активна одразу.
+        <strong>Урок 5</strong> — офіційні slash-команди Codex CLI (<code>command.md</code>).
+        <strong>codex resume</strong> / <strong>/resume</strong> — розділи Документація, Frontend, Backend.
         <kbd>↑</kbd>/<kbd>↓</kbd> — історія, <kbd>Tab</kbd> — автодоповнення.
       </p>
     </header>
@@ -374,8 +374,8 @@
         <div class="hint-box" id="hintBox">
           <strong>Завдання:</strong> виконай усі команди поточного розділу.<br><br>
           <strong>База:</strong> <code>/status</code>, <code>/init</code>, <code>/</code><br>
-          <strong>Інші розділи:</strong> <code>codex resume</code> → обери сесію<br>
-          <strong>Повернення:</strong> кнопка «Урок 5» зліва або <code>/sessions</code>
+          <strong>Інші розділи:</strong> <code>codex resume</code> або <code>/resume</code><br>
+          <strong>Довідка:</strong> офіційний список slash-команд з <code>command.md</code>
         </div>
 
         <div class="actions">
@@ -420,82 +420,110 @@
         id: "lesson5",
         title: "Урок 5 — CLI основи",
         termTitle: "codex — demo-project — zsh",
-        intro: "Базовий набір slash-команд з уроку 5 + додаткові утиліти CLI.",
+        intro: "Щоденні slash-команди Codex CLI (офіційний список з command.md).",
         commands: [
-          "/init", "/status", "/approvals", "/model", "/new", "/compact",
-          "/diff", "/mention", "/mcp", "/logout", "/quit", "codex resume",
-          "/history", "/branch", "/tokens", "/sandbox", "/export", "/sessions"
+          "/permissions", "/model", "/fast", "/personality", "/status", "/new", "/clear",
+          "/compact", "/diff", "/mention", "/copy", "/raw", "/review", "/approve",
+          "/init", "/mcp", "/resume", "/fork", "/side", "/btw", "/quit", "/exit",
+          "/logout", "codex resume"
         ]
       },
       docs: {
         id: "docs",
         title: "📄 Документація & README",
         termTitle: "codex — demo-app — docs branch",
-        intro: "Сесія «Add README summary section» — працюємо з markdown і експортом.",
+        intro: "Сесія «Add README summary section» — план, goal, AGENTS.md, review.",
         commands: [
-          "/mention README.md", "/diff", "/compact", "/export", "/branch",
-          "/history", "/status", "/init", "/review"
+          "/mention README.md", "/plan", "/goal", "/diff", "/compact", "/init",
+          "/review", "/copy", "/ide", "/skills", "/import"
         ]
       },
       frontend: {
         id: "frontend",
         title: "🎨 Frontend & CSS",
         termTitle: "codex — demo-app — fix/navbar",
-        intro: "Сесія «Fix navbar responsive layout» — стилі, review і sandbox.",
+        intro: "Сесія «Fix navbar responsive layout» — TUI, тема, permissions.",
         commands: [
-          "/mention src/navbar.css", "/diff", "/review", "/undo", "/sandbox",
-          "/approvals read-only", "/compact", "/status"
+          "/mention src/navbar.css", "/diff", "/review", "/permissions read-only",
+          "/vim", "/theme", "/statusline", "/title", "/keymap", "/raw"
         ]
       },
       backend: {
         id: "backend",
         title: "🔐 Backend & Auth",
         termTitle: "codex — demo-app — refactor/auth",
-        intro: "Сесія «Refactor auth middleware» — MCP, config і токени.",
+        intro: "Сесія «Refactor auth middleware» — MCP, hooks, фонові термінали.",
         commands: [
-          "/mention auth/middleware.ts", "/mcp", "/config", "/tokens",
-          "/approvals full", "/diff", "/status", "/compact"
+          "/mention auth/middleware.ts", "/mcp", "/debug-config", "/experimental",
+          "/ps", "/stop", "/agent", "/apps", "/plugins", "/hooks", "/memories",
+          "/usage", "/feedback", "/archive", "/delete", "/sandbox-add-read-dir"
         ]
       }
     };
 
     const UK_HINTS = {
-      "/init": "Створює файл agents.md — інструкції для агента в цьому проєкті. Запускай на початку роботи з репозиторієм.",
-      "/status": "Показує зведення сесії: робоча папка, режим дозволів, наявність agents.md, модель і витрати токенів.",
-      "/approvals": "Керує тим, чи агент діє сам (auto), лише читає (read-only), чи має повний доступ (full).",
-      "/model": "Вибір моделі OpenAI та рівня reasoning (low / medium / high) для поточної сесії.",
-      "/new": "Очищує контекст розмови і починає нову сесію Codex — ніби відкрив проєкт заново.",
-      "/compact": "Стиснення довгої історії чату в короткий summary, щоб не переповнювати контекст.",
-      "/diff": "Показує git diff змін у проєкті, не виходячи з Codex — зручно перед комітом.",
-      "/mention": "Додає файл до контексту агента. Швидша альтернатива — @ім'я_файлу прямо в промпті.",
-      "/mcp": "Список підключених MCP-серверів (зовнішні інструменти: файли, git, API тощо).",
-      "/logout": "Вихід з облікового запису Codex CLI на цій машині.",
-      "/quit": "Завершує поточну сесію Codex і повертає в звичайний shell.",
-      "codex resume": "Відновлює попередню збережену сесію зі списку — продовжуєш роботу з того ж контексту.",
+      "/permissions": "Налаштовує, що Codex може робити без запиту: Auto, Read Only або кастомні профілі.",
+      "/ide": "Додає контекст IDE — відкриті файли, виділення — у наступний промпт.",
+      "/keymap": "Перепризначення скорочень TUI; зберігається в tui.keymap у config.toml.",
+      "/vim": "Перемикає Vim-режим composer (normal/insert).",
+      "/sandbox-add-read-dir": "Додає читання абсолютного шляху в sandbox (лише Windows).",
+      "/agent": "Перемикає активний потік субагента для інспекції або продовження роботи.",
+      "/apps": "Огляд apps (конекторів); вставляє $app-slug у composer.",
+      "/plugins": "Огляд встановлених і discoverable плагінів; Space — toggle enabled.",
+      "/hooks": "Перегляд lifecycle hooks; trust/disable для non-managed hooks.",
+      "/clear": "Очищує термінал і починає новий чат (на відміну від Ctrl+L).",
+      "/archive": "Архівує поточну сесію і виходить; відновлення: codex unarchive.",
+      "/delete": "Назавжди видаляє сесію та нащадків і виходить з TUI.",
+      "/compact": "Стиснює видиму історію розмови, щоб звільнити контекст.",
+      "/copy": "Копіює останню завершену відповідь Codex (також Ctrl+O).",
+      "/diff": "Показує Git diff, включно з невідстежуваними файлами.",
+      "/exit": "Вихід з CLI — те саме, що /quit.",
+      "/experimental": "Увімкнення експериментальних функцій (Apps, Smart Approvals тощо).",
+      "/approve": "Один повтор дії, яку auto reviewer нещодавно відхилив.",
+      "/memories": "Увімкнення/вимкнення injection і генерації memories.",
+      "/skills": "Огляд локальних skills для покращення поведінки на задачі.",
+      "/import": "Імпорт Claude Code setup, project files і recent chats у Codex.",
+      "/feedback": "Надсилання логів і діагностики maintainer'ам Codex.",
+      "/init": "Генерує AGENTS.md — постійні інструкції для репозиторію.",
+      "/logout": "Вихід з облікового запису Codex на цій машині.",
+      "/mcp": "Список MCP-інструментів; /mcp verbose — деталі серверів.",
+      "/mention": "Прикріплює файл або папку до розмови.",
+      "/model": "Вибір активної моделі та reasoning effort (напр. gpt-4.1-mini).",
+      "/fast": "Перемикає Fast tier моделі: /fast on, /fast off, /fast status.",
+      "/plan": "Режим планування перед імплементацією; можна додати inline prompt.",
+      "/goal": "Ціль задачі: /goal <text>, /goal pause|resume|clear.",
+      "/personality": "Стиль відповідей: friendly, pragmatic, none.",
+      "/ps": "Фонові термінали (unified_exec) і до 3 рядків їхнього виводу.",
+      "/stop": "Зупиняє всі фонові термінали сесії (/clean — alias).",
+      "/fork": "Клонує поточну розмову в новий потік з новим ID.",
+      "/side": "Ефемерна бічна розмова без зміни головного transcript.",
+      "/btw": "Alias для /side — короткий focused follow-up.",
+      "/raw": "Raw scrollback для простішого копіювання виводу (Alt+R).",
+      "/resume": "Відновлює збережену розмову зі списку сесій.",
+      "/new": "Нова розмова в тому ж CLI без очищення терміналу.",
+      "/quit": "Негайний вихід з CLI; збережи роботу перед цим.",
+      "/review": "Code review робочого дерева поточною моделлю сесії.",
+      "/status": "Модель, approval policy, writable roots, token usage.",
+      "/usage": "Статистика токенів акаунту: daily, weekly, cumulative.",
+      "/debug-config": "Діагностика шарів config.toml і policy requirements.",
+      "/statusline": "Інтерактивне налаштування footer (model, git, tokens…).",
+      "/title": "Налаштування заголовка вікна/вкладки терміналу.",
+      "/theme": "Вибір теми підсвітки синтаксису; зберігається в tui.theme.",
+      "codex resume": "Відновлює збережену сесію зі списку (shell-команда, як у відео).",
       "codex": "Запускає інтерактивну сесію Codex CLI у поточній папці проєкту.",
-      "/": "Повний список вбудованих slash-команд — швидка довідка без виходу з сесії.",
-      "welcome": "Тренажер емулює Codex CLI без реального API — тренуй команди зі списку зліва.",
-      "shell-help": "У shell спочатку вводиш codex або одразу slash-команду, якщо сесія вже активна.",
-      "unknown-shell": "У звичайному shell працюють лише codex, codex resume та help — решта через сесію Codex.",
-      "unknown-slash": "Такої slash-команди немає в уроці 5. Натисни / для списку доступних.",
-      "prompt": "Звичайний текст тут — промпт для агента. Slash-команди починаються з /.",
-      "ctrl-c": "Ctrl+C перериває поточну дію, але в тренажері сесія лишається активною.",
-      "/history": "Показує останні промпти та slash-команди в поточній сесії — зручно згадати, що вже робив.",
-      "/branch": "Показує поточну git-гілку та стан робочого дерева.",
-      "/tokens": "Детальна статистика витрат токенів: input, output, cache, за сесію.",
-      "/sandbox": "Налаштування sandbox: де Codex може писати файли і запускати команди.",
-      "/export": "Експорт транскрипту сесії у файл (markdown/json) для архіву або шерінгу.",
-      "/sessions": "Список збережених сесій і швидкий перехід між розділами тренажера.",
-      "/review": "Запит code review від агента — перевірка diff перед merge.",
-      "/undo": "Скасовує останню зміну файлу, яку зробив агент (якщо ще не закомічено).",
-      "/config": "Показує локальний конфіг Codex CLI: модель за замовч., шляхи, MCP.",
-      "/mention README.md": "Додає README.md у контекст — ідеально для доповнення документації.",
-      "/mention src/navbar.css": "Підтягує CSS navbar у контекст для правок responsive layout.",
-      "/mention auth/middleware.ts": "Контекст middleware — рефакторинг auth без втрати логіки.",
-      "/approvals read-only": "Режим лише читання: агент аналізує CSS, але питає перед правками.",
-      "/approvals full": "Повний доступ + мережа — для інтеграцій і тестів auth.",
-      "module-switch": "Ти в новому розділі тренажера. Список команд зліва оновився — проходь їх по черзі.",
-      "module-wrong": "Ця команда належить іншому розділу. Спробуй codex resume або кнопку розділу зліва."
+      "/": "Список slash-команд поточного розділу — швидка довідка.",
+      "welcome": "Тренажер емулює Codex CLI без API — команди з офіційного command.md.",
+      "shell-help": "У shell: codex, codex resume, help. Slash-команди — у сесії Codex.",
+      "unknown-shell": "У shell працюють codex, codex resume, help — решта після входу в Codex.",
+      "unknown-slash": "Немає в поточному розділі. Введи / для списку.",
+      "prompt": "Звичайний текст — промпт для агента. Slash-команди починаються з /.",
+      "ctrl-c": "Ctrl+C перериває дію; у тренажері сесія лишається активною.",
+      "/mention README.md": "README.md у контексті — доповнення документації.",
+      "/mention src/navbar.css": "CSS navbar у контексті для responsive правок.",
+      "/mention auth/middleware.ts": "Middleware у контексті для рефакторингу auth.",
+      "/permissions read-only": "Read Only: Codex читає, але питає перед змінами.",
+      "module-switch": "Новий розділ тренажера — список команд зліва оновився.",
+      "module-wrong": "Команда з іншого розділу. Спробуй codex resume, /resume або кнопку зліва."
     };
 
     const SESSIONS = [
@@ -507,8 +535,8 @@
     const state = {
       inCodex: false,
       currentModule: "lesson5",
-      approvalMode: "auto",
-      model: "gpt-5-codex (medium reasoning)",
+      approvalMode: "Auto",
+      model: "gpt-4.1-mini",
       agentsMdExists: false,
       compacted: false,
       undoAvailable: false,
@@ -865,8 +893,8 @@
         cmdInput.placeholder = "/status, /model, /quit …";
         print(`<span class="line-ok">● Codex session active</span>`);
         printResult("Спробуй команди уроку", `
-          <span class="line-cmd">/init</span> · <span class="line-cmd">/status</span> · <span class="line-cmd">/sessions</span> · <span class="line-cmd">codex resume</span><br>
-          <span class="line-muted">codex resume відкриває 3 додаткові розділи з власними командами.</span>
+          <span class="line-cmd">/init</span> · <span class="line-cmd">/status</span> · <span class="line-cmd">/permissions</span> · <span class="line-cmd">/model</span><br>
+          <span class="line-cmd">codex resume</span> · <span class="line-cmd">/resume</span> — 3 додаткові розділи тренажера
         `, "ok", UK_HINTS.welcome);
         flushView("codex> · Урок 5 — введи команду");
       } else {
@@ -884,24 +912,61 @@
         beginView("codex");
         print(`<span class="line-ok">● Codex session started</span>`);
         printResult("Спробуй команди уроку", `
-          <span class="line-cmd">/init</span> · <span class="line-cmd">/status</span> · <span class="line-cmd">/approvals</span> · <span class="line-cmd">/model</span><br>
-          <span class="line-cmd">/compact</span> · <span class="line-cmd">/diff</span> · <span class="line-cmd">/mcp</span> · <span class="line-cmd">/</span> — повний список
+          <span class="line-cmd">/init</span> · <span class="line-cmd">/status</span> · <span class="line-cmd">/permissions</span> · <span class="line-cmd">/model</span><br>
+          <span class="line-cmd">/compact</span> · <span class="line-cmd">/diff</span> · <span class="line-cmd">/mcp</span> · <span class="line-cmd">/</span> — список розділу
         `, "ok", UK_HINTS.codex);
         flushView("codex> · session started");
       }
     }
 
     const ALL_SLASH_META = [
-      ["/init", "Create agents.md"], ["/status", "Session information"],
-      ["/approvals", "Approval mode settings"], ["/model", "Select OpenAI model"],
-      ["/new", "Start a new session"], ["/compact", "Compress chat history"],
-      ["/diff", "Show git diff"], ["/mention", "Add file to context"],
-      ["/mcp", "List MCP servers"], ["/logout", "Log out"], ["/quit", "Quit session"],
-      ["/history", "Recent prompts"], ["/branch", "Git branch info"],
-      ["/tokens", "Token usage detail"], ["/sandbox", "Sandbox settings"],
-      ["/export", "Export transcript"], ["/sessions", "List saved sessions"],
-      ["/review", "Request code review"], ["/undo", "Undo last agent edit"],
-      ["/config", "Show CLI config"]
+      ["/permissions", "Set what Codex can do without asking"],
+      ["/ide", "Include IDE context in next prompt"],
+      ["/keymap", "Remap TUI keyboard shortcuts"],
+      ["/vim", "Toggle Vim mode for composer"],
+      ["/sandbox-add-read-dir", "Grant sandbox read access (Windows)"],
+      ["/agent", "Switch active agent thread"],
+      ["/apps", "Browse apps and insert $app-slug"],
+      ["/plugins", "Browse installed plugins"],
+      ["/hooks", "View and manage lifecycle hooks"],
+      ["/clear", "Clear terminal and start fresh chat"],
+      ["/archive", "Archive session and exit"],
+      ["/delete", "Delete session permanently"],
+      ["/compact", "Summarize conversation to free tokens"],
+      ["/copy", "Copy latest completed output"],
+      ["/diff", "Show Git diff including untracked"],
+      ["/exit", "Exit CLI (alias of /quit)"],
+      ["/experimental", "Toggle experimental features"],
+      ["/approve", "Approve one auto-review retry"],
+      ["/memories", "Configure memory use"],
+      ["/skills", "Browse and use skills"],
+      ["/import", "Import Claude Code configuration"],
+      ["/feedback", "Send logs to maintainers"],
+      ["/init", "Generate AGENTS.md scaffold"],
+      ["/logout", "Sign out of Codex"],
+      ["/mcp", "List MCP tools"],
+      ["/mention", "Attach file to conversation"],
+      ["/model", "Set active model"],
+      ["/fast", "Toggle Fast service tier"],
+      ["/plan", "Switch to plan mode"],
+      ["/goal", "Set, pause, or clear task goal"],
+      ["/personality", "Set communication style"],
+      ["/ps", "Show background terminals"],
+      ["/stop", "Stop background terminals"],
+      ["/fork", "Fork conversation into new thread"],
+      ["/side", "Start ephemeral side conversation"],
+      ["/btw", "Alias for /side"],
+      ["/raw", "Toggle raw scrollback mode"],
+      ["/resume", "Resume saved conversation"],
+      ["/new", "Start new conversation in same CLI"],
+      ["/quit", "Exit the CLI"],
+      ["/review", "Review working tree"],
+      ["/status", "Display session configuration"],
+      ["/usage", "View account token usage"],
+      ["/debug-config", "Print config layer diagnostics"],
+      ["/statusline", "Configure TUI footer items"],
+      ["/title", "Configure terminal title items"],
+      ["/theme", "Choose syntax theme"]
     ];
 
     function listSlashCommands() {
@@ -922,6 +987,52 @@
       return { file: "README.md", branch: "main", diff: "+## Summary" };
     }
 
+    function slashHint(norm, base) {
+      return UK_HINTS[norm] || UK_HINTS[base];
+    }
+
+    function emulateSlash(base, arg, ctx, norm) {
+      const purpose = ALL_SLASH_META.find(([k]) => k === base)?.[1] || "Codex CLI command";
+      const argHtml = arg ? ` <span class="line-muted">${esc(arg)}</span>` : "";
+      const bodies = {
+        "/fast": `<span class="line-ok">Fast tier: ${esc(arg || "status")}</span> · catalog-driven per model`,
+        "/personality": `<span class="line-ok">● pragmatic</span> · friendly · none`,
+        "/copy": `<span class="line-ok">✓ Latest completed output copied</span> (Ctrl+O shortcut)`,
+        "/raw": `<span class="line-ok">✓ Raw scrollback toggled</span> · Alt+R · persist: tui.raw_output_mode`,
+        "/approve": `<span class="line-ok">✓ One retry approved</span> for recent auto-review denial`,
+        "/plan": `<span class="line-ok">● Plan mode active</span>${arg ? ` · prompt: ${esc(arg)}` : ""}`,
+        "/goal": `<span class="line-ok">Goal:</span> ${esc(arg || "view current goal — use /goal <objective>")}`,
+        "/fork": `<span class="line-ok">✓ Conversation forked</span> · new thread ID · original intact`,
+        "/side": `<span class="line-ok">● Side conversation opened</span>${arg ? ` · ${esc(arg)}` : ""}`,
+        "/btw": `<span class="line-ok">● Side conversation opened</span> (alias of /side)`,
+        "/ide": `<span class="line-ok">✓ IDE context attached</span> · open files + selection`,
+        "/skills": `<span class="line-ok">● skill selected</span> · context inserted for next turn`,
+        "/import": `<span class="line-ok">● Import picker opened</span> · Claude Code artifacts`,
+        "/vim": `<span class="line-ok">✓ Vim mode toggled</span> · default: tui.vim_mode_default`,
+        "/theme": `<span class="line-ok">● Theme saved</span> → tui.theme in config.toml`,
+        "/statusline": `<span class="line-ok">● Footer updated</span> → tui.status_line persisted`,
+        "/title": `<span class="line-ok">● Title updated</span> → tui.terminal_title persisted`,
+        "/keymap": `<span class="line-ok">● Keymap updated</span> → tui.keymap in config.toml`,
+        "/experimental": `<span class="line-ok">✓ Experimental features saved</span> · restart if prompted`,
+        "/memories": `<span class="line-ok">✓ Memory settings updated</span> for future sessions`,
+        "/feedback": `<span class="line-ok">✓ Feedback submitted</span> (emulated)`,
+        "/usage": `<span class="line-ok">Token usage:</span> ${esc(arg || "daily view")}`,
+        "/debug-config": `<span class="line-hl">config layers</span> (lowest first): defaults → user → project<br>
+          <span class="line-hl">policy</span>: approval=${esc(state.approvalMode)} · mcp_servers=filesystem,git`,
+        "/ps": `<span class="line-muted">bg-1</span> <span class="line-cmd">npm test</span> · running · last: PASS 12 tests`,
+        "/stop": `<span class="line-ok">✓ All background terminals stopped</span> (/clean alias)`,
+        "/agent": `<span class="line-ok">● Switched to subagent thread</span> explore-2`,
+        "/apps": `<span class="line-ok">✓ Inserted</span> <span class="line-cmd">$github-app</span> into composer`,
+        "/plugins": `<span class="line-ok">● Plugin browser</span> · installed / discoverable tabs`,
+        "/hooks": `<span class="line-ok">● Hook browser</span> · trust / disable non-managed hooks`,
+        "/archive": `<span class="line-ok">✓ Session archived</span> · restore: codex unarchive &lt;SESSION&gt;`,
+        "/delete": `<span class="line-warn">✓ Session deleted permanently</span> (emulated)`,
+        "/sandbox-add-read-dir": `<span class="line-warn">Windows only</span> · read dir: ${esc(arg || "C:\\\\path\\\\to\\\\dir")}`
+      };
+      const body = bodies[base] || `<span class="line-ok">✓ ${esc(purpose)}</span><br><span class="line-muted">Emulated per command.md</span>`;
+      printResult(`${base}${argHtml} — ${purpose.toLowerCase()}`, body, "ok", slashHint(norm, base));
+    }
+
     function handleSlash(cmd) {
       const norm = normalizeCmd(cmd);
       if (!isInCurrentModule(cmd)) {
@@ -929,7 +1040,7 @@
         if (ownerModule && ownerModule !== state.currentModule) {
           printResult("Команда з іншого розділу", `
             <span class="line-muted">«${esc(cmd)}» належить розділу <span class="line-hl">${esc(MODULES[ownerModule].title)}</span>.</span><br>
-            <span class="line-muted">Виконай <span class="line-cmd">codex resume</span> або клікни розділ зліва.</span>
+            <span class="line-muted">Виконай <span class="line-cmd">codex resume</span>, <span class="line-cmd">/resume</span> або клікни розділ зліва.</span>
           `, "warn", UK_HINTS["module-wrong"]);
           return false;
         }
@@ -943,63 +1054,70 @@
       switch (base) {
         case "/init":
           state.agentsMdExists = true;
-          printResult("/init — agents.md created", `
-            <span class="line-ok">✓ File: agents.md</span><br>
-            <span class="line-muted">Agent instructions ready for this project.</span><br>
-            <span class="line-muted">Next lesson covers agent files in detail.</span>
-          `, "ok", UK_HINTS["/init"]);
+          printResult("/init — AGENTS.md created", `
+            <span class="line-ok">✓ File: AGENTS.md</span><br>
+            <span class="line-muted">Scaffold ready — edit and commit for future sessions.</span>
+          `, "ok", slashHint(norm, "/init"));
           break;
 
         case "/status":
           printResult("/status — session info", `
             <span class="line-hl">Workspace</span><br>
             Directory: <span class="line-cmd">~/Projects/demo-app</span><br>
-            Approval: <span class="line-ok">${state.approvalMode}</span> · Sandbox: workspace write only<br>
-            agents.md: <span class="line-ok">${state.agentsMdExists ? "present" : "not created — run /init"}</span><br><br>
+            Approval policy: <span class="line-ok">${state.approvalMode}</span> · Writable roots: workspace<br>
+            AGENTS.md: <span class="line-ok">${state.agentsMdExists ? "present" : "not created — run /init"}</span><br><br>
             <span class="line-hl">Model</span>: ${state.model}<br>
-            <span class="line-hl">Client</span>: codex-cli 0.42.0 (emulator)<br>
+            <span class="line-hl">Context</span>: ${state.compacted ? "compacted summary" : "full transcript"}<br>
             <span class="line-hl">Tokens</span>: in 12,400 · out 3,180
           `, "ok", UK_HINTS["/status"]);
           break;
 
-        case "/approvals":
-          if (["auto", "read-only", "full"].includes(arg)) {
-            state.approvalMode = arg === "full" ? "full access" : arg;
-            printResult("/approvals — mode updated", `
-              <span class="line-ok">✓ Approval mode: ${state.approvalMode}</span>
-            `, "ok", UK_HINTS["/approvals"]);
+        case "/permissions":
+          if (["auto", "read-only", "read only"].includes(arg.toLowerCase())) {
+            state.approvalMode = arg.toLowerCase().includes("read") ? "Read Only" : "Auto";
+            printResult("/permissions — policy updated", `
+              <span class="line-ok">✓ Approval policy: ${state.approvalMode}</span>
+            `, "ok", slashHint(norm, "/permissions"));
           } else {
-            printResult("/approvals — available modes", `
-              <span class="line-cmd">auto</span> — read, edit, run in workspace<br>
-              <span class="line-cmd">read-only</span> — read only; ask before changes<br>
-              <span class="line-cmd">full</span> — full access + network<br><br>
+            printResult("/permissions — approval presets", `
+              <span class="line-cmd">Auto</span> — hands-off runs in workspace<br>
+              <span class="line-cmd">Read Only</span> — analyze; ask before edits<br>
+              <span class="line-muted">Custom profiles from config.toml also appear in picker.</span><br><br>
               Current: <span class="line-ok">${state.approvalMode}</span><br>
-              <span class="line-muted">Try: /approvals read-only</span>
-            `, "ok", UK_HINTS["/approvals"]);
+              <span class="line-muted">Try: /permissions read-only</span>
+            `, "ok", UK_HINTS["/permissions"]);
           }
           break;
 
         case "/model":
           printResult("/model — select model", `
-            <span class="line-ok">● gpt-5-codex (medium reasoning)</span> ← selected<br>
-            ○ gpt-5-codex (low reasoning)<br>
-            ○ gpt-5-codex (high reasoning)<br>
-            <span class="line-muted">Emulator: selection shown only (no picker UI).</span>
+            <span class="line-ok">● gpt-4.1-mini</span> ← selected<br>
+            ○ gpt-4.1<br>
+            <span class="line-muted">Run /status to verify model and reasoning effort.</span>
           `, "ok", UK_HINTS["/model"]);
           break;
 
         case "/new":
           state.compacted = false;
-          printResult("/new — new session", `
-            <span class="line-ok">✓ Context cleared. Fresh Codex session started.</span>
+          printResult("/new — new conversation", `
+            <span class="line-ok">✓ Fresh conversation in same CLI session.</span><br>
+            <span class="line-muted">Terminal view unchanged (unlike /clear).</span>
           `, "ok", UK_HINTS["/new"]);
+          break;
+
+        case "/clear":
+          state.compacted = false;
+          printResult("/clear — terminal cleared", `
+            <span class="line-ok">✓ Terminal cleared. Fresh chat started.</span><br>
+            <span class="line-muted">Unlike Ctrl+L, /clear resets the conversation.</span>
+          `, "ok", UK_HINTS["/clear"]);
           break;
 
         case "/compact":
           state.compacted = true;
           printResult("/compact — history compressed", `
-            <span class="line-ok">✓ Chat history squashed into summary.</span><br>
-            <span class="line-muted">Useful for long sessions — prevents context bloat.</span>
+            <span class="line-ok">✓ Earlier turns replaced with concise summary.</span><br>
+            <span class="line-muted">Critical details retained — context window freed.</span>
           `, "ok", UK_HINTS["/compact"]);
           break;
 
@@ -1007,137 +1125,78 @@
           printResult("/diff — git diff", `
             <span class="line-muted">diff --git a/${esc(ctx.file)} b/${esc(ctx.file)}</span><br>
             <span class="line-ok">${esc(ctx.diff)}</span><br>
-            <span class="line-muted">Branch: <span class="line-cmd">${esc(ctx.branch)}</span></span>
+            <span class="line-muted">Includes untracked files · branch: <span class="line-cmd">${esc(ctx.branch)}</span></span>
           `, "ok", UK_HINTS["/diff"]);
           break;
 
         case "/mention":
           if (norm !== "/mention" && UK_HINTS[norm]) {
             printResult(`/mention — ${esc(arg || ctx.file)}`, `
-              <span class="line-ok">✓ Added to context: ${esc(arg || ctx.file)}</span><br>
+              <span class="line-ok">✓ Attached: ${esc(arg || ctx.file)}</span><br>
               <span class="line-muted">Module: ${esc(getModule().title)}</span>
             `, "ok", UK_HINTS[norm]);
           } else if (!arg) {
             printResult("/mention — usage", `
               <span class="line-muted">Example: /mention ${esc(ctx.file)}</span><br>
-              <span class="line-muted">Or use <span class="line-cmd">@${esc(ctx.file)}</span> in a prompt (faster).</span>
+              <span class="line-muted">Select matching result from popup.</span>
             `, "warn", UK_HINTS["/mention"]);
           } else {
-            printResult("/mention — file added", `
-              <span class="line-ok">✓ Added to context: ${esc(arg)}</span>
+            printResult("/mention — file attached", `
+              <span class="line-ok">✓ Attached: ${esc(arg)}</span>
             `, "ok", UK_HINTS["/mention"]);
           }
           break;
 
         case "/mcp":
-          printResult("/mcp — MCP servers", `
-            <span class="line-ok">● filesystem</span> — local workspace<br>
+          printResult("/mcp — MCP tools", `
+            <span class="line-ok">● filesystem</span> — workspace tools<br>
             <span class="line-ok">● git</span> — repository tools<br>
-            <span class="line-muted">Emulator: demo list only.</span>
+            <span class="line-muted">${arg === "verbose" ? "Server diagnostics included." : "Use /mcp verbose for server details."}</span>
           `, "ok", UK_HINTS["/mcp"]);
           break;
 
         case "/logout":
           printResult("/logout — signed out", `
-            <span class="line-ok">✓ Logged out of Codex CLI (emulated).</span><br>
+            <span class="line-ok">✓ Local credentials cleared (emulated).</span><br>
             <span class="line-muted">Training mode: session stays active for practice.</span>
           `, "ok", UK_HINTS["/logout"]);
           break;
 
         case "/quit":
-          printResult("/quit — session closed", `
-            <span class="line-ok">✓ Codex session ended (emulated).</span><br>
+        case "/exit":
+          printResult(`${base} — exit CLI`, `
+            <span class="line-ok">✓ Codex exited (emulated).</span><br>
             <span class="line-muted">Training mode: prompt stays codex&gt; — continue practicing.</span>
-          `, "ok", UK_HINTS["/quit"]);
+          `, "ok", UK_HINTS[base]);
           break;
 
-        case "/history":
-          printResult("/history — recent activity", `
-            <span class="line-muted">1.</span> Add summary section to README<br>
-            <span class="line-muted">2.</span> /compact — compressed 18 messages<br>
-            <span class="line-muted">3.</span> /diff — reviewed ${esc(ctx.file)}<br>
-            <span class="line-muted">Module:</span> ${esc(getModule().title)}
-          `, "ok", UK_HINTS["/history"]);
-          break;
-
-        case "/branch":
-          printResult("/branch — git branch", `
-            <span class="line-ok">● ${esc(ctx.branch)}</span> ← current<br>
-            <span class="line-muted">○ main</span><br>
-            <span class="line-muted">Working tree: 1 file changed (emulated)</span>
-          `, "ok", UK_HINTS["/branch"]);
-          break;
-
-        case "/tokens":
-          printResult("/tokens — usage detail", `
-            <span class="line-hl">Session</span>: in 24,800 · out 6,420 · cache 3,100<br>
-            <span class="line-hl">Model</span>: ${state.model}<br>
-            <span class="line-muted">Est. cost: $0.04 (emulator)</span>
-          `, "ok", UK_HINTS["/tokens"]);
-          break;
-
-        case "/sandbox":
-          printResult("/sandbox — workspace sandbox", `
-            <span class="line-ok">● workspace-write</span> — edits only in project folder<br>
-            <span class="line-muted">Network: ${state.approvalMode === "full access" ? "enabled" : "restricted"}</span><br>
-            <span class="line-muted">Shell commands: allowed in workspace</span>
-          `, "ok", UK_HINTS["/sandbox"]);
-          break;
-
-        case "/export":
-          printResult("/export — transcript saved", `
-            <span class="line-ok">✓ Exported: codex-session-${state.currentModule}-2026-06-30.md</span><br>
-            <span class="line-muted">Format: markdown · ${state.history.length} commands in history</span>
-          `, "ok", UK_HINTS["/export"]);
-          break;
-
-        case "/sessions":
-          printResult("/sessions — saved sessions & modules", `
+        case "/resume":
+          printResult("/resume — saved sessions", `
             ${SESSIONS.map(s => `<span class="line-cmd">${s.moduleId === state.currentModule ? "●" : "○"}</span> ${esc(s.sectionLabel)} — <span class="line-muted">${esc(s.title)}</span>`).join("<br>")}<br><br>
-            <span class="line-muted">● = поточний розділ · codex resume — перемикання</span>
-          `, "ok", UK_HINTS["/sessions"]);
+            <span class="line-muted">Pick a session below to reload transcript.</span>
+          `, "ok", UK_HINTS["/resume"]);
+          openResumeModal();
           break;
 
         case "/review":
-          printResult("/review — code review", `
+          printResult("/review — working tree review", `
             <span class="line-ok">✓ Review complete (emulated)</span><br>
-            <span class="line-warn">⚠</span> <span class="line-muted">Consider extracting media query to shared breakpoint mixin.</span><br>
-            <span class="line-ok">✓</span> <span class="line-muted">No security issues in ${esc(ctx.file)}.</span>
+            <span class="line-warn">⚠</span> <span class="line-muted">Behavior change in ${esc(ctx.file)} — add regression test.</span><br>
+            <span class="line-muted">Follow with /diff for exact file changes.</span>
           `, "ok", UK_HINTS["/review"]);
-          break;
-
-        case "/undo":
-          if (state.undoAvailable || state.currentModule === "frontend") {
-            state.undoAvailable = false;
-            printResult("/undo — reverted", `
-              <span class="line-ok">✓ Reverted last edit in ${esc(ctx.file)}</span>
-            `, "ok", UK_HINTS["/undo"]);
-          } else {
-            printResult("/undo — nothing to undo", `
-              <span class="line-muted">No recent agent edits in this session.</span>
-            `, "warn", UK_HINTS["/undo"]);
-          }
-          break;
-
-        case "/config":
-          printResult("/config — CLI config", `
-            <span class="line-hl">default_model</span>: gpt-5-codex<br>
-            <span class="line-hl">approval</span>: ${state.approvalMode}<br>
-            <span class="line-hl">mcp</span>: filesystem, git<br>
-            <span class="line-hl">module</span>: ${esc(getModule().title)}
-          `, "ok", UK_HINTS["/config"]);
           break;
 
         default:
           if (cmd === "/" || cmd === "/help") {
             listSlashCommands();
-          } else if (base === "/approvals" && ["read-only", "full"].includes(arg)) {
-            state.approvalMode = arg === "full" ? "full access" : arg;
-            const hintKey = norm;
-            printResult("/approvals — mode updated", `
-              <span class="line-ok">✓ Approval mode: ${state.approvalMode}</span><br>
+          } else if (base === "/permissions" && arg.toLowerCase() === "read-only") {
+            state.approvalMode = "Read Only";
+            printResult("/permissions — policy updated", `
+              <span class="line-ok">✓ Approval policy: Read Only</span><br>
               <span class="line-muted">Module: ${esc(getModule().title)}</span>
-            `, "ok", UK_HINTS[hintKey] || UK_HINTS["/approvals"]);
+            `, "ok", UK_HINTS["/permissions read-only"]);
+          } else if (ALL_SLASH_META.some(([k]) => k === base)) {
+            emulateSlash(base, arg, ctx, norm);
           } else {
             success = false;
             printResult("Невідома команда", `
@@ -1320,8 +1379,7 @@
       state.currentModule = "lesson5";
       state.agentsMdExists = false;
       state.compacted = false;
-      state.undoAvailable = false;
-      state.approvalMode = "auto";
+      state.approvalMode = "Auto";
       welcomeShell(true);
       buildChecklist();
       cmdInput.focus();
