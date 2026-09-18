@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Тренажер Codex CLI</title>
+  <meta name="description" content="Емулятор OpenAI Codex CLI: запуск, slash-команди, дозволи й sandbox, сесії, codex exec — без API і без реального виконання." />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #9aa4af;
+      --green: #3fb950;
+      --cyan: #39c5cf;
+      --yellow: #d29922;
+      --blue: #58a6ff;
+      --purple: #a371f7;
+      --red: #f85149;
+      --prompt: #7ee787;
+      --font: "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2332 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: Inter, system-ui, sans-serif;
+    }
+    .wrap { max-width: 1140px; margin: 0 auto; padding: 20px; }
+    .top-nav {
+      display: flex; gap: 10px; align-items: center; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .top-nav a {
+      color: var(--muted); text-decoration: none; font-size: 0.88rem;
+      padding: 6px 12px; border-radius: 8px; border: 1px solid transparent;
+    }
+    .top-nav a:hover { color: var(--text); background: #21262d; }
+    .top-nav a.active { color: var(--cyan); border-color: var(--cyan); }
+    body.embed .top-nav, body.embed header { display: none; }
+    body.embed .wrap { padding: 12px; }
+    :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .skip-link { position: absolute; left: -9999px; top: 8px; background: var(--panel); color: var(--cyan); padding: 8px 12px; border-radius: 8px; z-index: 200; }
+    .skip-link:focus { left: 8px; }
+    header { margin-bottom: 16px; }
+    header h1 { font-size: 1.25rem; margin: 0 0 6px; font-weight: 600; }
+    header p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+    .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 14px; }
+    @media (max-width: 880px) { .layout { grid-template-columns: minmax(0, 1fr); } .sidebar { order: 2; } }
+    .sidebar, .terminal-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .sidebar { padding: 14px; font-size: 0.82rem; }
+    .sidebar h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; }
+    .cmd-list { list-style: none; padding: 0; margin: 0 0 16px; max-height: 300px; overflow-y: auto; }
+    .cmd-list li { margin: 0; }
+    .cmd-btn {
+      display: block; width: 100%; text-align: left; background: transparent; border: 0; color: var(--text);
+      padding: 5px 8px; border-radius: 6px; cursor: pointer; font-family: var(--font); font-size: 0.76rem;
+    }
+    .cmd-btn:hover { background: #21262d; }
+    .cmd-list code { color: var(--cyan); word-break: break-all; }
+    .cmd-list li.done .cmd-btn code { color: var(--green); }
+    .cmd-list li.done .cmd-btn::after { content: " ✓"; color: var(--green); }
+    .progress { height: 6px; background: #21262d; border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+    .progress > div { height: 100%; background: linear-gradient(90deg, var(--green), var(--cyan)); width: 0%; transition: width 0.3s; }
+    .stats { color: var(--muted); font-size: 0.78rem; margin-bottom: 14px; }
+    .hint-box { background: #21262d; border-radius: 8px; padding: 10px; color: var(--muted); line-height: 1.45; font-size: 0.78rem; }
+    .terminal-wrap { display: flex; flex-direction: column; align-self: start; min-width: 0; }
+    .term-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.78rem; color: var(--muted); }
+    .dots { display: flex; gap: 6px; }
+    .dots span { width: 10px; height: 10px; border-radius: 50%; }
+    .dots span:nth-child(1) { background: #ff5f57; }
+    .dots span:nth-child(2) { background: #febc2e; }
+    .dots span:nth-child(3) { background: #28c840; }
+    .term-title { flex: 1; text-align: center; font-family: var(--font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .output { min-height: 360px; max-height: 60vh; overflow-y: auto; padding: 16px; font-family: var(--font); font-size: 0.84rem; line-height: 1.55; word-break: break-word; }
+    .output-status { color: var(--muted); font-size: 0.75rem; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .line-user { color: var(--prompt); margin-bottom: 4px; }
+    .line-sys { color: var(--text); }
+    .line-muted { color: var(--muted); }
+    .line-ok { color: var(--green); }
+    .line-warn { color: var(--yellow); }
+    .line-err { color: var(--red); }
+    .line-cmd { color: var(--cyan); }
+    .line-hl { color: var(--blue); }
+    .line-uk-hint { color: #e6c87a; font-size: 0.82rem; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(230, 200, 122, 0.25); line-height: 1.5; }
+    .result-box { margin: 8px 0 12px; padding: 12px 14px; border-radius: 8px; border: 1px solid #238636; background: rgba(35, 134, 54, 0.12); border-left: 4px solid var(--green); }
+    .result-box.warn { border-color: var(--yellow); background: rgba(210, 153, 34, 0.1); }
+    .result-box.danger { border-color: var(--red); background: rgba(248, 81, 73, 0.1); }
+    .result-box.purple { border-color: var(--purple); background: rgba(163, 113, 247, 0.1); }
+    .result-title { color: var(--green); font-weight: 600; margin-bottom: 8px; font-size: 0.82rem; }
+    .result-box.warn .result-title { color: var(--yellow); }
+    .result-box.danger .result-title { color: var(--red); }
+    .result-box.purple .result-title { color: var(--purple); }
+    .result-box pre { margin: 0; font: inherit; white-space: pre-wrap; }
+    .input-row { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--border); background: #0d1117; }
+    .input-row:focus-within { box-shadow: inset 0 0 0 2px var(--cyan); }
+    .prompt-label { color: var(--prompt); font-family: var(--font); font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+    #cmdInput { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: var(--text); font-family: var(--font); font-size: 0.9rem; }
+    .btn { background: #21262d; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; cursor: pointer; }
+    .btn:hover { background: #30363d; }
+    .btn-primary { background: #238636; border-color: #2ea043; }
+    .btn-primary:hover { background: #2ea043; }
+    .btn-test { background: rgba(210, 153, 34, 0.15); border-color: var(--yellow); color: #e6c87a; }
+    .btn-test.active { background: var(--yellow); color: #0d1117; }
+    .btn-danger { border-color: var(--red); color: #ffb3ad; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    kbd { background: #21262d; border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: var(--font); font-size: 0.75rem; }
+    .module-badge { display: inline-block; background: #21262d; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 0.78rem; color: var(--cyan); margin-bottom: 10px; }
+    .module-nav { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .module-nav .btn { text-align: left; font-size: 0.75rem; padding: 6px 8px; }
+    .module-nav .btn.active { border-color: var(--blue); color: var(--blue); }
+    .test-question { color: #e6c87a; line-height: 1.6; margin-bottom: 10px; }
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 10; padding: 20px; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; max-width: 520px; width: 100%; padding: 18px; max-height: 85vh; overflow-y: auto; }
+    .modal h3 { margin: 0 0 12px; font-size: 1rem; }
+    .modal p { color: var(--muted); font-size: 0.82rem; line-height: 1.5; margin: 0 0 12px; }
+    .pick-item {
+      display: block; width: 100%; text-align: left; background: transparent; color: var(--text); font-family: var(--font);
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 0.82rem;
+    }
+    .pick-item:hover, .pick-item.selected { border-color: var(--blue); background: #1c2128; }
+    .pick-item.risk-high.selected { border-color: var(--red); }
+    .pick-item small { color: var(--muted); display: block; margin-top: 4px; font-family: Inter, system-ui, sans-serif; }
+    .search-field { width: 100%; margin-bottom: 12px; padding: 8px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font); }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#cmdInput">Перейти до поля вводу</a>
+  <div class="wrap">
+    <nav class="top-nav" aria-label="Навігація курсу">
+      <a href="index.html#/">← До курсу</a>
+      <a href="trainer.html" class="active" aria-current="page">Тренажер</a>
+      <a href="index.html#/cheatsheet">Шпаргалка</a>
+    </nav>
+    <header>
+      <h1>Тренажер Codex CLI</h1>
+      <p>
+        Емуляція OpenAI Codex CLI без API: запуск із shell, slash-команди з офіційної довідки (<code>command.md</code>),
+        дозволи й sandbox, сесії, <code>codex exec</code>. Команда зараховується лише в точному вигляді
+        (або як явний синонім, напр. <code>/exit</code> = <code>/quit</code>, <code>--yolo</code> = довга назва прапорця).
+        <kbd>↑</kbd>/<kbd>↓</kbd> — історія, <kbd>Tab</kbd> — автодоповнення.
+      </p>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="module-badge" id="moduleBadge">Розділ</div>
+        <h2>Прогрес розділу</h2>
+        <div class="progress"><div id="progressBar"></div></div>
+        <div class="stats" id="progressText">0 / 0 команд</div>
+        <h2>Розділи</h2>
+        <div class="module-nav" id="moduleNav"></div>
+        <h2>Команди розділу</h2>
+        <ul class="cmd-list" id="cmdChecklist"></ul>
+        <div class="hint-box">
+          <strong>Завдання:</strong> виконай усі команди розділу. Клік по команді вставляє її в поле — натисни Enter.<br><br>
+          <strong>Shell чи Codex?</strong> Команди <code>codex …</code> і <code>git …</code> — у shell (<code>%</code>). Slash-команди — лише всередині сесії (<code>codex ›</code>). Вийти з сесії: <code>/quit</code>.<br><br>
+          <strong>Тест:</strong> опис → введи команду; можна пропустити.
+        </div>
+        <div class="actions">
+          <button class="btn btn-test" id="btnTest" type="button" aria-pressed="false">Режим тестування</button>
+          <button class="btn btn-test" id="btnSkip" type="button" hidden>Пропустити</button>
+          <button class="btn btn-primary" id="btnStart" type="button">Новий термінал</button>
+          <button class="btn" id="btnResetProgress" type="button">Скинути прогрес</button>
+        </div>
+      </aside>
+
+      <section class="terminal-wrap" aria-label="Емулятор терміналу">
+        <div class="term-bar">
+          <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="term-title" id="termTitle">stas@MacBook-Pro — demo-app — zsh</div>
+        </div>
+        <div class="output" id="output" role="log" aria-live="polite" aria-label="Вивід терміналу">
+          <div class="output-status" id="outputStatus">shell</div>
+          <div id="livePanel"></div>
+        </div>
+        <form class="input-row" id="cmdForm" autocomplete="off">
+          <span class="prompt-label" id="promptLabel" aria-hidden="true">stas@MacBook-Pro demo-app %</span>
+          <label class="visually-hidden" for="cmdInput">Команда для терміналу</label>
+          <input id="cmdInput" type="text" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" placeholder="codex, codex resume, /status …" />
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="resumeModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="resumeTitle">
+      <h3 id="resumeTitle">Відновити сесію</h3>
+      <label class="visually-hidden" for="resumeSearch">Пошук сесії</label>
+      <input type="text" id="resumeSearch" class="search-field" placeholder="Пошук (напр. readme)…" />
+      <div id="sessionList"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="resumeConfirm" type="button">Enter — відновити</button>
+        <button class="btn" id="resumeCancel" type="button">Esc — скасувати</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="permModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="permTitle">
+      <h3 id="permTitle">/permissions — що Codex може робити без запиту</h3>
+      <p>Назва середнього пресета залежить від версії: у довідці — <strong>Auto</strong>, у новіших версіях — <strong>Default</strong>.</p>
+      <div id="permList"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="permConfirm" type="button">Enter — застосувати</button>
+        <button class="btn" id="permCancel" type="button">Esc — скасувати</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Тренажер Codex CLI. Зарахування — лише повний збіг після нормалізації (див. matches). */
+    var STORAGE_KEY = "cli-codex-cli-v1-trainer";
+    var SHELL_PROMPT = "stas@MacBook-Pro demo-app %";
+    var CODEX_PROMPT = "codex ›";
+
+    var MODULE_LIST = [
+      { id: "start", title: "1. Запуск і перші кроки", intro: "Встановлено? Запуск сесії, список команд, статус, вихід.",
+        commands: [
+          ["codex --version", "Показує версію встановленого Codex CLI — перевірка, що інструмент є."],
+          ["codex", "Запускає інтерактивну сесію Codex у поточній папці."],
+          ["/", "Відкриває список slash-команд у сесії."],
+          ["/status", "Модель, політика дозволів, writable roots і використання токенів поточної сесії."],
+          ["/quit", "Виходить із сесії Codex у звичайний shell."],
+          ["codex \"Поясни структуру проєкту\"", "Запускає сесію одразу з першим промптом у лапках."],
+          ["/exit", "Те саме, що /quit — вихід із CLI."]
+        ] },
+      { id: "context", title: "2. Контекст: файли й AGENTS.md", intro: "AGENTS.md, згадка файлів, IDE-контекст, додаткові папки.",
+        commands: [
+          ["codex", "Запускає інтерактивну сесію Codex у поточній папці."],
+          ["/init", "Створює каркас AGENTS.md — постійні інструкції для репозиторію."],
+          ["/mention README.md", "Прикріплює README.md до розмови як контекст."],
+          ["/mention src/app.js", "Прикріплює src/app.js до розмови як контекст."],
+          ["/ide", "Додає контекст IDE (відкриті файли, виділення) у наступний промпт."],
+          ["/quit", "Виходить із сесії Codex у звичайний shell."],
+          ["codex -i screenshot.png", "Запускає сесію з прикріпленим зображенням (скриншот помилки, макет)."],
+          ["codex --add-dir ../shared", "Дає сесії доступ на запис ще до однієї папки поза робочою."]
+        ] },
+      { id: "models", title: "3. Моделі й налаштування", intro: "Вибір моделі, Fast, стиль відповідей, config.toml і вигляд TUI.",
+        commands: [
+          ["codex -m gpt-5.6-terra", "Запускає сесію з конкретною моделлю (прапорець -m / --model)."],
+          ["/model", "Вибір активної моделі та рівня reasoning у сесії."],
+          ["/fast", "Вмикає/вимикає Fast-режим моделі, якщо каталог моделі його має."],
+          ["/personality", "Стиль спілкування: friendly, pragmatic або none."],
+          ["/debug-config", "Показує шари конфігурації і звідки взялося кожне налаштування."],
+          ["/statusline", "Налаштовує, що показує нижній рядок стану TUI."],
+          ["/theme", "Вибір теми підсвітки синтаксису."],
+          ["/experimental", "Вмикає або вимикає експериментальні функції."]
+        ] },
+      { id: "perms", title: "4. Дозволи й sandbox", intro: "Read Only / Default (Auto) / Full Access, прапорці --sandbox і -a, режим без захисту.",
+        commands: [
+          ["codex --sandbox read-only", "Запускає сесію, у якій Codex лише читає: зміни й мережа — тільки з дозволу."],
+          ["/permissions", "Відкриває вибір пресета: Read Only, Default (Auto) або Full Access."],
+          ["/status", "Модель, політика дозволів, writable roots і використання токенів поточної сесії."],
+          ["/approve", "Дозволяє один повтор дії, яку автоматичний рецензент щойно відхилив."],
+          ["/quit", "Виходить із сесії Codex у звичайний shell."],
+          ["codex --sandbox workspace-write --ask-for-approval on-request", "Запис лише в робочій папці; за межі — з запитом дозволу."],
+          ["codex --dangerously-bypass-approvals-and-sandbox", "Без підтверджень і без sandbox (синонім --yolo) — лише в ізольованому середовищі."],
+          ["/setup-default-sandbox", "Налаштовує посилений sandbox агента (лише Windows)."],
+          ["/sandbox-add-read-dir C:\\Projects\\shared", "Дає sandbox читання ще однієї абсолютної папки (лише Windows)."]
+        ] },
+      { id: "code", title: "5. Робота з кодом", intro: "План, ціль, diff, review, копіювання і відкат через Git.",
+        commands: [
+          ["git status", "Перевіряє стан репозиторію перед сесією агента."],
+          ["codex", "Запускає інтерактивну сесію Codex у поточній папці."],
+          ["/plan", "Перемикає розмову в режим планування — спершу план, потім зміни."],
+          ["/goal", "Показує ціль задачі; /goal <текст> — задати, pause/resume/clear — керувати."],
+          ["/diff", "Git diff просто в сесії, включно з файлами, яких Git ще не відстежує."],
+          ["/review", "Просить Codex перевірити зміни в робочому дереві."],
+          ["/copy", "Копіює останню завершену відповідь Codex (також Ctrl+O)."],
+          ["/raw", "Перемикає raw scrollback — простіше виділяти й копіювати вивід."],
+          ["/quit", "Виходить із сесії Codex у звичайний shell."],
+          ["git diff --stat", "Коротко: які файли і скільки рядків змінено після сесії."]
+        ] },
+      { id: "sessions", title: "6. Сесії", intro: "resume, нова розмова, стиснення контексту, форк, архів і видалення.",
+        commands: [
+          ["codex resume", "Відкриває список збережених сесій, щоб продовжити одну з них."],
+          ["/compact", "Стискає історію розмови в підсумок, щоб звільнити контекст."],
+          ["/new", "Нова розмова в тому ж CLI без очищення екрана."],
+          ["/clear", "Очищує термінал і починає нову розмову."],
+          ["/fork", "Клонує поточну розмову в новий потік; оригінал лишається."],
+          ["/side", "Ефемерна бічна розмова, що не засмічує головну."],
+          ["/btw", "Синонім /side — коротке бічне питання."],
+          ["/resume", "Список збережених розмов усередині сесії."],
+          ["/archive", "Архівує сесію і виходить; повернути — codex unarchive."],
+          ["codex resume --last", "Одразу відновлює останню сесію з поточної папки, без списку."],
+          ["/delete", "Назавжди видаляє сесію (і дочірні) та виходить — незворотно."]
+        ] },
+      { id: "ext", title: "7. Розширення: MCP, skills, hooks", intro: "Зовнішні інструменти, плагіни, навички, хуки, фонові термінали.",
+        commands: [
+          ["codex mcp list", "Список налаштованих MCP-серверів — із shell, без сесії."],
+          ["codex", "Запускає інтерактивну сесію Codex у поточній папці."],
+          ["/mcp", "Список MCP-інструментів, доступних у сесії."],
+          ["/mcp verbose", "Те саме з діагностикою серверів."],
+          ["/apps", "Огляд застосунків (конекторів); вставляє $app-slug у промпт."],
+          ["/plugins", "Огляд встановлених і доступних плагінів."],
+          ["/skills", "Вибір локальної навички (skill) для задачі."],
+          ["/hooks", "Перегляд і довіра до lifecycle-хуків."],
+          ["/memories", "Налаштування використання й генерації пам'яті."],
+          ["/agent", "Перемикання на потік субагента (назва залежить від версії)."],
+          ["/ps", "Фонові термінали сесії та останні рядки їхнього виводу."],
+          ["/stop", "Зупиняє всі фонові термінали сесії (синонім /clean)."],
+          ["/import", "Імпорт налаштувань і чатів Claude Code у Codex."]
+        ] },
+      { id: "auto", title: "8. Автоматизація й акаунт", intro: "codex exec без TUI, використання, відгук, вихід з акаунта.",
+        commands: [
+          ["codex exec \"Опиши зміни в README\"", "Неінтерактивний запуск: одна задача, результат у stdout."],
+          ["codex exec --sandbox read-only \"Знайди TODO у проєкті\"", "codex exec лише з правом читання — безпечний аналіз."],
+          ["codex exec --json \"Опиши зміни в README\"", "Вивід подій у форматі JSON Lines — для скриптів і CI."],
+          ["codex exec resume --last", "Продовжує останню exec-сесію з поточної папки."],
+          ["codex", "Запускає інтерактивну сесію Codex у поточній папці."],
+          ["/usage", "Статистика використання токенів акаунта."],
+          ["/feedback", "Надсилає логи й діагностику розробникам Codex."],
+          ["/logout", "Виходить з облікового запису Codex на цьому комп'ютері."],
+          ["codex login", "Вхід у Codex (через ChatGPT або API-ключ)."]
+        ] }
+    ];
+
+    /* Явні еквіваленти: ключ — пункт чекліста, значення — інші правильні форми. */
+    var ALIASES = {
+      "/quit": ["/exit"],
+      "/exit": ["/quit"],
+      "/side": ["/btw"],
+      "/btw": ["/side"],
+      "/stop": ["/clean"],
+      "codex --version": ["codex -V"],
+      "codex -m gpt-5.6-terra": ["codex --model gpt-5.6-terra"],
+      "codex -i screenshot.png": ["codex --image screenshot.png"],
+      "codex --sandbox read-only": ["codex -s read-only"],
+      "codex --sandbox workspace-write --ask-for-approval on-request": [
+        "codex -s workspace-write -a on-request", "codex --sandbox workspace-write -a on-request",
+        "codex -s workspace-write --ask-for-approval on-request", "codex --ask-for-approval on-request --sandbox workspace-write",
+        "codex -a on-request -s workspace-write", "codex -a on-request --sandbox workspace-write"
+      ],
+      "codex --dangerously-bypass-approvals-and-sandbox": ["codex --yolo"],
+      "codex exec --sandbox read-only \"Знайди TODO у проєкті\"": ["codex exec -s read-only \"Знайди TODO у проєкті\""],
+      "codex exec \"Опиши зміни в README\"": ["codex e \"Опиши зміни в README\""]
+    };
+
+    var UK_HINTS = {};
+    var MODULES = {};
+    MODULE_LIST.forEach(function (m) {
+      MODULES[m.id] = { id: m.id, title: m.title, intro: m.intro, commands: m.commands.map(function (c) { return c[0]; }) };
+      m.commands.forEach(function (c) { if (!UK_HINTS[c[0]]) UK_HINTS[c[0]] = c[1]; });
+    });
+
+    /* ---------- строгий матчинг ---------- */
+    function normalizeCommand(s) {
+      return String(s || "").replace(/[“”„«»]/g, "\"").replace(/[‘’ʼ]/g, "'").replace(/\s+/g, " ").trim();
+    }
+    function matches(input, listed) {
+      var a = normalizeCommand(input);
+      if (!a) return false;
+      if (a === normalizeCommand(listed)) return true;
+      return (ALIASES[listed] || []).some(function (x) { return normalizeCommand(x) === a; });
+    }
+    function allCommands() {
+      var seen = {}, out = [];
+      MODULE_LIST.forEach(function (m) { m.commands.forEach(function (c) { if (!seen[c[0]]) { seen[c[0]] = 1; out.push(c[0]); } }); });
+      return out;
+    }
+    window.TRAINER = { commands: allCommands, matches: matches };
+
+    /* ---------- дані емулятора ---------- */
+    var SLASH_META = {
+      "/permissions": "choose what Codex is allowed to do", "/ide": "include IDE context", "/keymap": "remap TUI shortcuts",
+      "/vim": "toggle Vim mode for the composer", "/setup-default-sandbox": "set up elevated agent sandbox (Windows)",
+      "/sandbox-add-read-dir": "grant sandbox read access (Windows)", "/agent": "switch the active agent thread",
+      "/apps": "browse apps", "/plugins": "browse plugins", "/hooks": "view and manage lifecycle hooks",
+      "/clear": "clear the terminal and start a new chat", "/archive": "archive this session", "/delete": "permanently delete this session",
+      "/compact": "summarize conversation to free context", "/copy": "copy the latest response", "/diff": "show git diff (including untracked files)",
+      "/exit": "exit Codex", "/experimental": "toggle experimental features", "/approve": "approve one retry of a recent auto-review denial",
+      "/memories": "configure memory use and generation", "/skills": "use skills", "/import": "import setup and chats from Claude Code",
+      "/feedback": "send logs to maintainers", "/init": "create an AGENTS.md file", "/logout": "log out of Codex",
+      "/mcp": "list configured MCP tools", "/mention": "mention a file", "/model": "choose model and reasoning effort",
+      "/fast": "toggle Fast service tier", "/plan": "switch to Plan mode", "/goal": "set or view the task goal",
+      "/personality": "choose a communication style", "/ps": "list background terminals", "/stop": "stop all background terminals",
+      "/fork": "fork the current chat", "/side": "start a side conversation", "/btw": "side conversation (alias of /side)",
+      "/raw": "toggle raw scrollback mode", "/resume": "resume a saved chat", "/new": "start a new chat", "/quit": "exit Codex",
+      "/review": "review my current changes", "/status": "show session configuration and token usage", "/usage": "view account usage",
+      "/debug-config": "show config layers", "/statusline": "configure the status line", "/title": "configure the terminal title",
+      "/theme": "choose a syntax highlighting theme"
+    };
+    var NO_ARGS = ["/permissions", "/keymap", "/vim", "/setup-default-sandbox", "/agent", "/apps", "/plugins", "/hooks", "/clear", "/archive",
+      "/delete", "/compact", "/copy", "/diff", "/exit", "/experimental", "/approve", "/memories", "/skills", "/import", "/feedback", "/init",
+      "/logout", "/model", "/personality", "/ps", "/stop", "/fork", "/resume", "/new", "/quit", "/status", "/debug-config", "/statusline",
+      "/title", "/theme", "/review"];
+    var RENAMED = { approvals: "/permissions" };
+    var MODELS = ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5"];
+    var PRESETS = [
+      { id: "read-only", label: "Read Only", desc: "Читає файли в робочій папці. Редагування й інтернет — лише з дозволу.", sandbox: "read-only", approval: "on-request" },
+      { id: "auto", label: "Default (Auto)", desc: "Читає, редагує файли й запускає команди в робочій папці. Інтернет і файли поза нею — з дозволу.", sandbox: "workspace-write", approval: "on-request" },
+      { id: "full-access", label: "Full Access", desc: "Редагує файли поза робочою папкою і ходить в інтернет без запитів. Високий ризик.", sandbox: "danger-full-access", approval: "never" }
+    ];
+    var SESSIONS = [
+      { id: 1, title: "Add README summary section", ago: "2h ago", file: "README.md", branch: "docs/readme-summary", diff: "+## Summary\n+Короткий опис проєкту для нових учасників." },
+      { id: 2, title: "Fix navbar responsive layout", ago: "1d ago", file: "src/navbar.css", branch: "fix/navbar-responsive", diff: "+@media (max-width: 768px) { .nav-links { flex-direction: column; } }" },
+      { id: 3, title: "Refactor auth middleware", ago: "3d ago", file: "src/auth/middleware.js", branch: "refactor/auth-middleware", diff: "-function authOld(req) {\n+export async function authMiddleware(req, res, next) {" }
+    ];
+
+    var state = {
+      inCodex: false,
+      currentModule: "start",
+      preset: "auto",
+      model: "gpt-5.6-terra",
+      agentsMd: false,
+      compacted: false,
+      session: null,
+      extraDirs: [],
+      history: [],
+      histIdx: 0,
+      triedByModule: {},
+      testMode: { active: false, queue: [], index: 0, correct: 0, wrong: 0, answered: false }
+    };
+    MODULE_LIST.forEach(function (m) { state.triedByModule[m.id] = new Set(); });
+
+    function saveProgress() {
+      try {
+        var tried = {};
+        Object.keys(state.triedByModule).forEach(function (k) { tried[k] = Array.from(state.triedByModule[k]); });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: 1, module: state.currentModule, tried: tried }));
+      } catch (e) { /* сховище недоступне — прогрес лише в цій сесії */ }
+    }
+    function loadProgress() {
+      var data = null;
+      try { data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch (e) { data = null; }
+      if (!data || typeof data !== "object") return;
+      if (data.tried && typeof data.tried === "object") {
+        Object.keys(MODULES).forEach(function (k) {
+          var list = Array.isArray(data.tried[k]) ? data.tried[k] : [];
+          list.forEach(function (c) { if (MODULES[k].commands.indexOf(c) !== -1) state.triedByModule[k].add(c); });
+        });
+      }
+      if (data.module && MODULES[data.module]) state.currentModule = data.module;
+    }
+
+    function $(id) { return document.getElementById(id); }
+    var livePanel = $("livePanel"), outputEl = $("output"), outputStatus = $("outputStatus"), cmdInput = $("cmdInput"),
+        promptLabel = $("promptLabel"), progressBar = $("progressBar"), progressText = $("progressText"),
+        cmdChecklist = $("cmdChecklist"), moduleBadge = $("moduleBadge"), moduleNav = $("moduleNav"), termTitle = $("termTitle");
+    var viewChunks = [];
+
+    function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    function getModule() { return MODULES[state.currentModule] || MODULES.start; }
+    function beginView(cmd) {
+      viewChunks = [];
+      if (cmd !== null && cmd !== undefined) viewChunks.push('<div class="line-user">' + esc(state.inCodex ? CODEX_PROMPT : SHELL_PROMPT) + " " + esc(cmd) + "</div>");
+    }
+    function print(html, cls) { viewChunks.push('<div class="' + (cls || "line-sys") + '">' + html + "</div>"); }
+    function printResult(title, body, type, hint) {
+      var cls = "result-box" + (type && type !== "ok" ? " " + type : "");
+      viewChunks.push('<div class="' + cls + '"><div class="result-title">' + esc(title) + "</div>" + body +
+        (hint ? '<div class="line-uk-hint">' + esc(hint) + "</div>" : "") + "</div>");
+    }
+    function flushView(status) {
+      livePanel.innerHTML = viewChunks.join("");
+      outputEl.scrollTop = 0;
+      if (status) outputStatus.textContent = status;
+    }
+    function pre(text, cls) { return '<pre class="' + (cls || "line-sys") + '">' + esc(text) + "</pre>"; }
+    function setPrompt() {
+      promptLabel.textContent = state.inCodex ? CODEX_PROMPT : SHELL_PROMPT;
+      cmdInput.placeholder = state.inCodex ? "/status, /permissions, /quit …" : "codex, codex resume, git status …";
+      termTitle.textContent = state.inCodex ? "codex — demo-app" + (state.session ? " — " + state.session.branch : "") : "stas@MacBook-Pro — demo-app — zsh";
+    }
+    function presetById(id) { return PRESETS.filter(function (p) { return p.id === id; })[0] || PRESETS[1]; }
+
+    /* ---------- прогрес і чекліст ---------- */
+    function markTried(cmd) {
+      var hit = false;
+      Object.keys(MODULES).forEach(function (k) {
+        MODULES[k].commands.forEach(function (c) { if (matches(cmd, c)) { state.triedByModule[k].add(c); hit = true; } });
+      });
+      if (hit) { saveProgress(); updateProgress(); updateModuleNav(); }
+    }
+    function updateProgress() {
+      var mod = getModule(), tried = state.triedByModule[mod.id], n = 0;
+      mod.commands.forEach(function (c) { if (tried.has(c)) n++; });
+      var total = mod.commands.length;
+      progressBar.style.width = total ? (n / total * 100) + "%" : "0%";
+      progressText.textContent = n + " / " + total + " команд";
+      moduleBadge.textContent = mod.title;
+      Array.prototype.forEach.call(cmdChecklist.querySelectorAll("li"), function (li) {
+        li.classList.toggle("done", tried.has(li.getAttribute("data-cmd")));
+      });
+    }
+    function updateModuleNav() {
+      moduleNav.innerHTML = MODULE_LIST.map(function (m) {
+        var tried = state.triedByModule[m.id], done = 0;
+        m.commands.forEach(function (c) { if (tried.has(c[0])) done++; });
+        var active = m.id === state.currentModule;
+        return '<button type="button" class="btn' + (active ? " active" : "") + '" data-module="' + m.id + '"' + (active ? ' aria-current="true"' : "") +
+          ' title="' + esc(m.intro) + '">' + esc(m.title) + " · " + done + "/" + m.commands.length + "</button>";
+      }).join("");
+      Array.prototype.forEach.call(moduleNav.querySelectorAll("button"), function (btn) {
+        btn.addEventListener("click", function () { switchModule(btn.getAttribute("data-module")); });
+      });
+    }
+    function buildChecklist() {
+      cmdChecklist.innerHTML = getModule().commands.map(function (c) {
+        return '<li data-cmd="' + esc(c) + '"><button type="button" class="cmd-btn" title="' + esc(UK_HINTS[c] || "") + '"><code>' + esc(c) + "</code></button></li>";
+      }).join("");
+      Array.prototype.forEach.call(cmdChecklist.querySelectorAll("li"), function (li) {
+        li.querySelector("button").addEventListener("click", function () {
+          cmdInput.value = li.getAttribute("data-cmd");
+          cmdInput.focus();
+        });
+      });
+      updateProgress();
+      updateModuleNav();
+    }
+    function switchModule(id) {
+      if (!MODULES[id]) return;
+      state.currentModule = id;
+      saveProgress();
+      buildChecklist();
+      var mod = getModule();
+      beginView(null);
+      printResult("Розділ: " + mod.title, '<span class="line-muted">' + esc(mod.intro) + '</span><br><br><span class="line-hl">Команд у розділі:</span> ' + mod.commands.length +
+        '<br><span class="line-muted">Клікни команду зліва (вона з\'явиться в полі) і натисни Enter. Зверни увагу на запрошення: <code>%</code> — shell, <code>codex ›</code> — сесія.</span>', "purple");
+      flushView(mod.title);
+    }
+
+    /* ---------- shell ---------- */
+    function tokenize(s) {
+      var out = [], re = /"([^"]*)"|'([^']*)'|(\S+)/g, m;
+      while ((m = re.exec(s))) out.push(m[1] !== undefined ? { v: m[1], q: true } : m[2] !== undefined ? { v: m[2], q: true } : { v: m[3], q: false });
+      return out;
+    }
+    function clapError(msg) {
+      printResult("codex: помилка аргументів", pre("error: " + msg + "\n\nFor more information, try '--help'.", "line-err"), "warn",
+        "Codex не запустився. Перевір назву прапорця і значення за шпаргалкою курсу.");
+      return false;
+    }
+    function startSession(opts) {
+      state.inCodex = true;
+      state.compacted = false;
+      if (opts.model) state.model = opts.model;
+      if (opts.preset) state.preset = opts.preset;
+      setPrompt();
+      var p = presetById(state.preset);
+      var danger = state.preset === "full-access";
+      var body = '<span class="line-ok">● OpenAI Codex</span> <span class="line-muted">(емуляція)</span><br>' +
+        "model: <span class=\"line-cmd\">" + esc(state.model) + "</span> · directory: ~/Projects/demo-app<br>" +
+        "permissions: <span class=\"" + (danger ? "line-err" : "line-ok") + "\">" + esc(p.label) + "</span>" +
+        (opts.image ? "<br>image: <span class=\"line-cmd\">" + esc(opts.image) + "</span> прикріплено до першого промпту" : "") +
+        (opts.addDir ? "<br>writable roots: workspace, <span class=\"line-cmd\">" + esc(opts.addDir) + "</span>" : "") +
+        (opts.prompt ? "<br><br><span class=\"line-hl\">› " + esc(opts.prompt) + "</span><br><span class=\"line-muted\">Агент прочитав би файли й відповів (відповідь AI не емулюється).</span>" : "") +
+        '<br><br><span class="line-muted">Спробуй </span><span class="line-cmd">/</span><span class="line-muted"> — список команд, </span><span class="line-cmd">/status</span><span class="line-muted"> — стан, </span><span class="line-cmd">/quit</span><span class="line-muted"> — вихід.</span>';
+      if (danger) {
+        printResult("Сесія без sandbox і без підтверджень", body +
+          '<br><br><span class="line-err">⚠ Кожна команда агента виконується одразу: видалення файлів, git push --force, доступ до мережі й ключів — без запиту.</span>',
+          "danger", "Високий ризик. Безпечніше: codex --sandbox workspace-write --ask-for-approval on-request. Без захисту — лише в контейнері чи VM без цінних даних.");
+      } else {
+        printResult("codex — сесія запущена", body, "ok", opts.hint);
+      }
+      return true;
+    }
+    function runCodexShell(raw) {
+      var t = tokenize(raw).slice(1);
+      var sub = t[0] && !t[0].q ? t[0].v : "";
+      if (sub === "--version" || sub === "-V") {
+        if (t.length > 1) return clapError("unexpected argument '" + t[1].v + "' found");
+        printResult("codex --version", pre("codex-cli <версія>"), "ok", "Точний номер залежить від встановлення; оновлення — тим самим способом, яким ставив (npm, Homebrew).");
+        return true;
+      }
+      if (sub === "login") {
+        if (t.length > 1 && ["--device-auth", "--with-api-key"].indexOf(t[1].v) === -1) return clapError("unexpected argument '" + t[1].v + "' found");
+        printResult("codex login", '<span class="line-muted">Відкриваю браузер для входу через ChatGPT… (емуляція)</span><br><span class="line-ok">Successfully logged in</span>', "ok",
+          "Облікові дані зберігаються локально. Ключів і паролів у промпти не вставляй.");
+        return true;
+      }
+      if (sub === "logout") {
+        if (t.length > 1) return clapError("unexpected argument '" + t[1].v + "' found");
+        printResult("codex logout", '<span class="line-ok">Successfully logged out</span>', "ok", "Те саме, що /logout у сесії.");
+        return true;
+      }
+      if (sub === "mcp") {
+        if (t[1] && t[1].v === "list" && t.length === 2) {
+          printResult("codex mcp list", pre("Name        Command                         Status\nfilesystem  npx @modelcontextprotocol/...   enabled\ngithub      (http) api.githubcopilot...     enabled"), "ok",
+            "MCP-сервери налаштовуються в config.toml або через codex mcp add. Приклад виводу умовний.");
+          return true;
+        }
+        return clapError("unrecognized subcommand — спробуй codex mcp list");
+      }
+      if (sub === "resume") {
+        var rest = t.slice(1).map(function (x) { return x.v; });
+        if (rest.length === 0) {
+          startSession({});
+          viewChunks.pop();
+          printResult("codex resume", '<span class="line-muted">Відкрито список збережених сесій цієї папки. Обери сесію й натисни Enter.</span>', "ok", UK_HINTS["codex resume"]);
+          setTimeout(openResumeModal, 0);
+          return true;
+        }
+        if (rest.length === 1 && rest[0] === "--last") {
+          resumeSession(SESSIONS[0], true);
+          return true;
+        }
+        return clapError("unexpected argument '" + rest.join(" ") + "' found");
+      }
+      if (sub === "exec" || sub === "e") return runExec(t.slice(1));
+      if (sub === "review") {
+        printResult("codex review", '<span class="line-muted">Неінтерактивне рев\'ю змін (емуляція). У курсі тренуємо /review у сесії.</span>', "ok");
+        return true;
+      }
+      /* інтерактивний запуск з прапорцями */
+      var opts = {}, i = 0;
+      while (i < t.length) {
+        var tok = t[i];
+        if (tok.q || tok.v.charAt(0) !== "-") {
+          if (i !== t.length - 1) return clapError("unexpected argument '" + t[i + 1].v + "' found");
+          if (!tok.q) return clapError("unrecognized subcommand '" + tok.v + "' — промпт бери в лапки");
+          opts.prompt = tok.v; i++; continue;
+        }
+        var f = tok.v, val = t[i + 1] ? t[i + 1].v : null;
+        if (f === "-m" || f === "--model") {
+          if (!val) return clapError("a value is required for '--model <MODEL>'");
+          opts.model = val; if (MODELS.indexOf(val) === -1) opts.hint = "Модель «" + val + "» тренажер не знає. Реальний список — у /model твоєї версії."; i += 2; continue;
+        }
+        if (f === "-s" || f === "--sandbox") {
+          if (["read-only", "workspace-write", "danger-full-access"].indexOf(val) === -1) return clapError("invalid value '" + (val || "") + "' for '--sandbox <SANDBOX_MODE>'\n  [possible values: read-only, workspace-write, danger-full-access]");
+          opts.sandbox = val; i += 2; continue;
+        }
+        if (f === "-a" || f === "--ask-for-approval") {
+          if (["on-request", "never"].indexOf(val) === -1) return clapError("invalid value '" + (val || "") + "' for '--ask-for-approval <APPROVAL_POLICY>'\n  [possible values: on-request, never]");
+          opts.approval = val; i += 2; continue;
+        }
+        if (f === "--dangerously-bypass-approvals-and-sandbox" || f === "--yolo") { opts.bypass = true; i++; continue; }
+        if (f === "-i" || f === "--image") { if (!val) return clapError("a value is required for '--image <FILE>'"); opts.image = val; i += 2; continue; }
+        if (f === "--add-dir") { if (!val) return clapError("a value is required for '--add-dir <DIR>'"); opts.addDir = val; i += 2; continue; }
+        if (f === "-C" || f === "--cd") { if (!val) return clapError("a value is required for '--cd <DIR>'"); i += 2; continue; }
+        if (f === "--search") { i++; continue; }
+        return clapError("unexpected argument '" + f + "' found");
+      }
+      if (opts.bypass || opts.sandbox === "danger-full-access") opts.preset = "full-access";
+      else if (opts.sandbox === "read-only") opts.preset = "read-only";
+      else if (opts.sandbox === "workspace-write") opts.preset = "auto";
+      else if (!state.inCodex) opts.preset = "auto";
+      if (opts.approval === "never" && opts.preset !== "full-access") opts.hint = "-a never: Codex не питатиме дозволу; усе, що не дозволяє sandbox, просто не виконається.";
+      if (opts.addDir) state.extraDirs = [opts.addDir];
+      return startSession(opts);
+    }
+    function runExec(t) {
+      if (t[0] && t[0].v === "resume") {
+        if (t.length === 2 && t[1].v === "--last") {
+          printResult("codex exec resume --last", '<span class="line-muted">Продовжено останню exec-сесію з цієї папки (емуляція).</span><br><span class="line-ok">Готово: відповідь виведено в stdout.</span>', "ok", UK_HINTS["codex exec resume --last"]);
+          return true;
+        }
+        return clapError("очікується codex exec resume --last або ID сесії");
+      }
+      var json = false, sandbox = "read-only", prompt = null, i = 0, explicit = false;
+      while (i < t.length) {
+        var tok = t[i];
+        if (tok.q) { prompt = tok.v; i++; continue; }
+        if (tok.v === "--json") { json = true; i++; continue; }
+        if (tok.v === "--sandbox" || tok.v === "-s") {
+          var v = t[i + 1] ? t[i + 1].v : "";
+          if (["read-only", "workspace-write", "danger-full-access"].indexOf(v) === -1) return clapError("invalid value '" + v + "' for '--sandbox <SANDBOX_MODE>'");
+          sandbox = v; explicit = true; i += 2; continue;
+        }
+        if (tok.v === "--full-auto") { return clapError("--full-auto застарів — використовуй --sandbox workspace-write"); }
+        return clapError("unexpected argument '" + tok.v + "' found — промпт бери в лапки");
+      }
+      if (!prompt) return clapError("потрібен промпт у лапках: codex exec \"…\"");
+      var out = json
+        ? pre('{"type":"thread.started","thread_id":"…"}\n{"type":"turn.started"}\n{"type":"item.completed","item":{"type":"agent_message","text":"README: додано розділ Summary…"}}\n{"type":"turn.completed","usage":{…}}')
+        : pre("README.md: додано розділ «Summary» з описом проєкту;\nоновлено інструкцію встановлення.");
+      printResult("codex exec" + (explicit ? " · sandbox: " + sandbox : ""), out, "ok",
+        json ? "--json — події рядок за рядком (JSON Lines), зручно для скриптів і CI." : "codex exec виконує одну задачу без TUI і завершується. Для аналізу без змін — --sandbox read-only.");
+      return true;
+    }
+    function runShell(raw) {
+      var cmd = normalizeCommand(raw);
+      var first = cmd.split(" ")[0];
+      if (cmd.charAt(0) === "/") {
+        printResult("Це не команда shell", pre("zsh: no such file or directory: " + first, "line-err"), "warn",
+          "Slash-команди працюють лише всередині сесії Codex. Спершу запусти codex.");
+        return false;
+      }
+      if (first === "codex") return runCodexShell(cmd);
+      if (cmd === "git status") {
+        printResult("git status", pre("On branch main\nnothing to commit, working tree clean"), "ok", "Чисте дерево перед сесією — точка відкату: усе, що змінить Codex, буде видно в git diff.");
+        return true;
+      }
+      if (cmd === "git diff --stat") {
+        printResult("git diff --stat", pre(" README.md  | 6 ++++--\n src/app.js | 9 +++++++--\n 2 files changed, 11 insertions(+), 4 deletions(-)"), "ok",
+          "Перевір, чи змінено лише очікувані файли. Відкат змін Codex — через Git (git restore), окремої команди /undo в актуальній довідці немає.");
+        return true;
+      }
+      if (cmd === "clear") { beginView(null); return null; }
+      if (first === "git") {
+        printResult("git (емуляція)", '<span class="line-muted">У тренажері емулюються лише git status і git diff --stat.</span>', "warn");
+        return false;
+      }
+      printResult("Невідома команда", pre("zsh: command not found: " + first, "line-err"), "warn", "У shell тренажера працюють codex …, git status, git diff --stat, clear.");
+      return false;
+    }
+
+    /* ---------- сесія Codex ---------- */
+    function sessionCtx() { return state.session || { file: "README.md", branch: "main", diff: "+## Summary" }; }
+    function exitSession(title, body, type, hint) {
+      state.inCodex = false;
+      setPrompt();
+      printResult(title, body + '<br><span class="line-muted">Повернулися в shell (' + esc(SHELL_PROMPT) + ").</span>", type || "ok", hint);
+    }
+    function listSlash() {
+      var rows = Object.keys(SLASH_META).map(function (k) { return '<span class="line-cmd">' + esc(k) + '</span> <span class="line-muted">— ' + esc(SLASH_META[k]) + "</span>"; });
+      printResult("Slash-команди", rows.join("<br>"), "ok", "Почни вводити назву після / — список фільтрується. Частина команд залежить від версії, ОС і моделі.");
+    }
+    function runSlash(cmd) {
+      var parts = cmd.split(" ");
+      var base = parts[0], arg = parts.slice(1).join(" ");
+      if (cmd === "/") { listSlash(); return true; }
+      if (base === "/help") {
+        printResult("Невідома команда", '<span class="line-muted">/help у Codex немає.</span>', "warn", "Список команд — просто / (відкриває меню), довідка shell — codex --help.");
+        return false;
+      }
+      if (RENAMED[base.slice(1)]) {
+        printResult("Невідома команда", '<span class="line-muted">' + esc(base) + ' — стара назва з ранніх версій.</span>', "warn", "Тепер це " + RENAMED[base.slice(1)] + ".");
+        return false;
+      }
+      if (base === "/undo") {
+        printResult("Невідома команда", '<span class="line-muted">В актуальній довідці /undo немає.</span>', "warn",
+          "Зміни файлів відкочуй через Git: git diff → git restore <файл>. Esc Esc — редагувати попереднє повідомлення (це розмова, не файли).");
+        return false;
+      }
+      if (!SLASH_META[base] && base !== "/clean") {
+        printResult("Невідома команда", '<span class="line-muted">' + esc(base) + " — такої slash-команди немає.</span>", "warn", "Введи / для списку команд.");
+        return false;
+      }
+      if (NO_ARGS.indexOf(base) !== -1 && arg) {
+        printResult("Зайвий аргумент", '<span class="line-muted">' + esc(base) + " відкриває меню або діє без аргументів.</span>", "warn", "Введи " + base + " без тексту після нього.");
+        return false;
+      }
+      var ctx = sessionCtx(), p = presetById(state.preset);
+      switch (base) {
+        case "/status":
+          printResult("/status", pre("Workspace\n  Path:            ~/Projects/demo-app\n  Approval:        " + p.approval + "\n  Sandbox:         " + p.sandbox +
+            "\n  Writable roots:  " + (p.sandbox === "read-only" ? "—" : "~/Projects/demo-app" + (state.extraDirs.length ? ", " + state.extraDirs.join(", ") : "")) +
+            "\n  AGENTS.md:       " + (state.agentsMd ? "present" : "not found") + "\nModel\n  Name:            " + state.model +
+            "\nContext\n  " + (state.compacted ? "compacted summary" : "full transcript") + " · tokens used: 12.4K in / 3.2K out"), "ok", UK_HINTS["/status"]);
+          return true;
+        case "/permissions": printResult("/permissions", '<span class="line-muted">Відкрито вибір пресета. Поточний: </span><span class="line-cmd">' + esc(p.label) + "</span>", "ok", UK_HINTS["/permissions"]); setTimeout(openPermModal, 0); return true;
+        case "/model":
+          printResult("/model", MODELS.map(function (m) { return (m === state.model ? '<span class="line-ok">● ' : "○ ") + esc(m) + (m === state.model ? "</span> ← поточна" : ""); }).join("<br>") +
+            '<br><br><span class="line-muted">Далі — вибір reasoning effort (low / medium / high). Список залежить від версії й акаунта; перевір /status.</span>', "ok", UK_HINTS["/model"]);
+          return true;
+        case "/fast":
+          if (arg && ["on", "off", "status"].indexOf(arg) === -1) { printResult("/fast — використання", '<span class="line-muted">/fast, /fast on, /fast off, /fast status</span>', "warn"); return false; }
+          printResult("/fast", '<span class="line-ok">Fast tier: ' + esc(arg || "перемкнено") + "</span><br><span class=\"line-muted\">Є лише для моделей, у каталозі яких є Fast; інакше команда прихована.</span>", "ok", UK_HINTS["/fast"]);
+          return true;
+        case "/personality": printResult("/personality", '<span class="line-ok">● pragmatic</span> · friendly · none', "ok", UK_HINTS["/personality"]); return true;
+        case "/init":
+          state.agentsMd = true;
+          printResult("/init", '<span class="line-ok">✓ Створено AGENTS.md</span><br><span class="line-muted">Перевір і відредагуй: команди збірки й тестів, стиль коду, що не чіпати. Закоміть — і наступні сесії читатимуть ці інструкції.</span>', "ok", UK_HINTS["/init"]);
+          return true;
+        case "/mention":
+          if (!arg) { printResult("/mention", '<span class="line-muted">Почни вводити шлях, напр. /mention src/app.js, і обери файл у списку. Швидше — символ @ у промпті.</span>', "ok", "Прикріплює файл до розмови."); return true; }
+          printResult("/mention " + arg, '<span class="line-ok">✓ Прикріплено: ' + esc(arg) + '</span><br><span class="line-muted">Наступні промпти посилатимуться на цей файл.</span>', "ok", "Прикріплює файл або папку до розмови як контекст.");
+          return true;
+        case "/ide": printResult("/ide", '<span class="line-ok">✓ Контекст IDE додано</span> · відкриті файли + виділення<br><span class="line-muted">Потрібне підключене розширення Codex в IDE.</span>', "ok", UK_HINTS["/ide"]); return true;
+        case "/diff": printResult("/diff", pre("diff --git a/" + ctx.file + " b/" + ctx.file + "\n" + ctx.diff) + '<span class="line-muted">Включно з файлами, яких Git ще не відстежує (untracked) · гілка ' + esc(ctx.branch) + "</span>", "ok", UK_HINTS["/diff"]); return true;
+        case "/review": printResult("/review", '<span class="line-ok">✓ Рев\'ю завершено (емуляція)</span><br><span class="line-warn">⚠</span> <span class="line-muted">Змінено поведінку в ' + esc(ctx.file) + " — бракує тесту.</span><br><span class=\"line-muted\">Точні зміни — /diff.</span>", "ok", UK_HINTS["/review"]); return true;
+        case "/plan": printResult("/plan", '<span class="line-ok">● Plan mode</span>' + (arg ? " · перший запит: " + esc(arg) : "") + '<br><span class="line-muted">Codex спершу пропонує план; зміни — після твого погодження.</span>', "ok", UK_HINTS["/plan"]); return true;
+        case "/goal":
+          if (["pause", "resume", "clear"].indexOf(arg) !== -1) { printResult("/goal " + arg, '<span class="line-ok">✓ Ціль: ' + esc(arg) + "</span>", "ok", UK_HINTS["/goal"]); return true; }
+          printResult("/goal", arg ? '<span class="line-ok">✓ Ціль задано:</span> ' + esc(arg) : '<span class="line-muted">Ціль не задано. Приклад: /goal Виправити вхід і не зламати тести</span>', "ok", UK_HINTS["/goal"]);
+          return true;
+        case "/copy": printResult("/copy", '<span class="line-ok">✓ Остання завершена відповідь скопійована</span> (також Ctrl+O)', "ok", UK_HINTS["/copy"]); return true;
+        case "/raw":
+          if (arg && ["on", "off"].indexOf(arg) === -1) { printResult("/raw — використання", '<span class="line-muted">/raw, /raw on, /raw off</span>', "warn"); return false; }
+          printResult("/raw", '<span class="line-ok">✓ Raw scrollback: ' + esc(arg || "перемкнено") + "</span> · Alt+R", "ok", UK_HINTS["/raw"]); return true;
+        case "/compact": state.compacted = true; printResult("/compact", '<span class="line-ok">✓ Попередні ходи замінено стислим підсумком.</span><br><span class="line-muted">Ключові факти лишаються, контекстне вікно звільнено.</span>', "ok", UK_HINTS["/compact"]); return true;
+        case "/new": state.compacted = false; printResult("/new", '<span class="line-ok">✓ Нова розмова в тому ж CLI.</span><br><span class="line-muted">Екран не очищено (на відміну від /clear).</span>', "ok", UK_HINTS["/new"]); return true;
+        case "/clear": state.compacted = false; beginView(null); printResult("/clear", '<span class="line-ok">✓ Екран очищено, почато нову розмову.</span><br><span class="line-muted">Ctrl+L лише очищає екран і лишає розмову.</span>', "ok", UK_HINTS["/clear"]); return true;
+        case "/fork": printResult("/fork", '<span class="line-ok">✓ Розмову клоновано в новий потік</span> · оригінал без змін', "ok", UK_HINTS["/fork"]); return true;
+        case "/side": case "/btw": printResult(base, '<span class="line-ok">● Бічна розмова відкрита</span>' + (arg ? " · " + esc(arg) : "") + '<br><span class="line-muted">Її історія окрема від головного потоку.</span>', "ok", UK_HINTS[base]); return true;
+        case "/resume": printResult("/resume", '<span class="line-muted">Відкрито список збережених розмов.</span>', "ok", UK_HINTS["/resume"]); setTimeout(openResumeModal, 0); return true;
+        case "/archive": exitSession("/archive", '<span class="line-ok">✓ Сесію заархівовано.</span> Повернути: <span class="line-cmd">codex unarchive &lt;SESSION&gt;</span>', "ok", UK_HINTS["/archive"]); return true;
+        case "/delete":
+          exitSession("/delete — сесію видалено назавжди", '<span class="line-err">✗ Transcript і дочірні сесії видалено (емуляція). Відновити неможливо.</span>', "danger",
+            "Незворотно. Якщо сесія просто заважає в списку — /archive (можна повернути через codex unarchive).");
+          return true;
+        case "/quit": case "/exit": exitSession(base, '<span class="line-ok">✓ Codex завершено.</span>', "ok", "Перед виходом збережи або закоміть важливу роботу."); return true;
+        case "/logout": printResult("/logout", '<span class="line-ok">✓ Локальні облікові дані видалено (емуляція).</span>', "ok", UK_HINTS["/logout"]); return true;
+        case "/approve": printResult("/approve", '<span class="line-ok">✓ Дозволено один повтор</span> нещодавно відхиленої дії<br><span class="line-muted">Повтор виконується за поточною політикою сесії; політику це не змінює.</span>', "ok", UK_HINTS["/approve"]); return true;
+        case "/setup-default-sandbox": printResult("/setup-default-sandbox", '<span class="line-warn">Лише Windows</span> · налаштування посиленого sandbox агента<br><span class="line-muted">На macOS/Linux sandbox вбудований (Seatbelt / bwrap) — команди в меню не буде.</span>', "ok", UK_HINTS["/setup-default-sandbox"]); return true;
+        case "/sandbox-add-read-dir":
+          if (!/^[A-Za-z]:\\/.test(arg)) { printResult("/sandbox-add-read-dir", '<span class="line-muted">Потрібен абсолютний шлях Windows, напр. C:\\Projects\\shared</span>', "warn", "Лише Windows; папка має існувати."); return false; }
+          printResult("/sandbox-add-read-dir", '<span class="line-warn">Лише Windows</span> · читання дозволено: ' + esc(arg), "ok", UK_HINTS["/sandbox-add-read-dir C:\\Projects\\shared"]); return true;
+        case "/mcp":
+          if (arg && arg !== "verbose") { printResult("/mcp — використання", '<span class="line-muted">/mcp або /mcp verbose</span>', "warn"); return false; }
+          printResult("/mcp" + (arg ? " verbose" : ""), '<span class="line-ok">● filesystem</span> — read_file, list_dir<br><span class="line-ok">● github</span> — search_issues, get_pull_request' +
+            (arg ? '<br><span class="line-muted">filesystem: stdio · startup 120 ms · 2 tools<br>github: http · auth: OAuth · 2 tools</span>' : '<br><span class="line-muted">/mcp verbose — деталі серверів.</span>'), "ok", UK_HINTS["/mcp"]);
+          return true;
+        case "/usage":
+          if (arg && ["daily", "weekly", "cumulative"].indexOf(arg) === -1) { printResult("/usage — використання", '<span class="line-muted">/usage, /usage daily|weekly|cumulative</span>', "warn"); return false; }
+          printResult("/usage", '<span class="line-muted">Використання акаунта (' + esc(arg || "меню") + "): дані умовні в тренажері.</span>", "ok", UK_HINTS["/usage"]); return true;
+        case "/stop": case "/clean": printResult(base, '<span class="line-ok">✓ Усі фонові термінали зупинено</span>', "ok", UK_HINTS["/stop"]); return true;
+        case "/ps": printResult("/ps", pre("bg-1  npm test -- --watch   running\n      PASS src/app.test.js\n      Tests: 12 passed"), "ok", UK_HINTS["/ps"]); return true;
+        case "/debug-config": printResult("/debug-config", pre("layers (lowest precedence first):\n  defaults → ~/.codex/config.toml → project .codex/config.toml → CLI -c\npolicy: approval=" + p.approval + " · sandbox=" + p.sandbox), "ok", UK_HINTS["/debug-config"]); return true;
+        default:
+          printResult(base, '<span class="line-ok">✓ ' + esc(SLASH_META[base]) + '</span><br><span class="line-muted">Емуляція за command.md.</span>', "ok", UK_HINTS[base]);
+          return true;
+      }
+    }
+    function runCodex(cmd) {
+      if (cmd.charAt(0) === "/") return runSlash(cmd);
+      var first = cmd.split(" ")[0];
+      if (first === "codex" || first === "git" || first === "clear") {
+        printResult("Ти всередині сесії Codex", '<span class="line-muted">«' + esc(cmd) + "» — команда shell. Тут вона пішла б агенту як текст промпту.</span>", "warn",
+          "Спершу вийди з сесії: /quit (або /exit), потім виконай команду в shell.");
+        return false;
+      }
+      printResult("Промпт агенту (емуляція)", '<span class="line-ok">› ' + esc(cmd) + '</span><br><span class="line-muted">Відповідь AI не емулюється. Реальний Codex читав би файли і, залежно від /permissions, питав би дозволу на зміни.</span>', "ok");
+      return false;
+    }
+
+    /* ---------- виконання ---------- */
+    function execute(raw) {
+      var cmd = normalizeCommand(raw);
+      if (!cmd) return;
+      if (state.testMode.active) { handleTestAnswer(cmd); return; }
+      state.history.push(cmd);
+      state.histIdx = state.history.length;
+      beginView(cmd);
+      var ok = state.inCodex ? runCodex(cmd) : runShell(cmd);
+      if (ok) {
+        var listed = getModule().commands.filter(function (c) { return matches(cmd, c); })[0];
+        var elsewhere = !listed && allCommands().some(function (c) { return matches(cmd, c); });
+        markTried(cmd);
+        if (elsewhere) print('<span class="line-muted">Зараховано в іншому розділі, де є ця команда.</span>');
+      }
+      flushView((state.inCodex ? "codex" : "shell") + " · " + getModule().title);
+    }
+
+    /* ---------- модалки ---------- */
+    var lastFocus = null;
+    function openModal(el, focusEl) {
+      lastFocus = document.activeElement;
+      el.classList.add("open");
+      el.setAttribute("aria-hidden", "false");
+      if (focusEl) focusEl.focus();
+    }
+    function closeModal(el) {
+      el.classList.remove("open");
+      el.setAttribute("aria-hidden", "true");
+      if (lastFocus && lastFocus.focus) lastFocus.focus(); else cmdInput.focus();
+    }
+    function trapKeys(el, onConfirm, e) {
+      if (e.key === "Escape") { e.preventDefault(); closeModal(el); return; }
+      if (e.key === "Enter" && !(e.target && e.target.id && /Cancel$/.test(e.target.id))) {
+        e.preventDefault();
+        if (e.target.classList && e.target.classList.contains("pick-item")) e.target.click();
+        onConfirm();
+        return;
+      }
+      if (e.key === "Tab") {
+        var f = Array.prototype.slice.call(el.querySelectorAll("button, input"));
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+
+    var resumeModal = $("resumeModal"), selectedSession = SESSIONS[0];
+    function renderSessions(filter) {
+      var f = String(filter || "").toLowerCase();
+      var items = SESSIONS.filter(function (s) { return !f || s.title.toLowerCase().indexOf(f) !== -1 || s.file.toLowerCase().indexOf(f) !== -1; });
+      var list = $("sessionList");
+      list.innerHTML = items.map(function (s) {
+        var sel = selectedSession && selectedSession.id === s.id;
+        return '<button type="button" class="pick-item' + (sel ? " selected" : "") + '" data-id="' + s.id + '" aria-pressed="' + sel + '">' + esc(s.title) + "<small>" + esc(s.ago) + " · " + esc(s.branch) + "</small></button>";
+      }).join("") || '<p>Немає сесій за запитом «' + esc(filter) + "».</p>";
+      Array.prototype.forEach.call(list.querySelectorAll(".pick-item"), function (el) {
+        el.addEventListener("click", function () {
+          selectedSession = SESSIONS.filter(function (x) { return x.id === +el.getAttribute("data-id"); })[0];
+          Array.prototype.forEach.call(list.querySelectorAll(".pick-item"), function (b) { var on = b === el; b.classList.toggle("selected", on); b.setAttribute("aria-pressed", on); });
+        });
+      });
+    }
+    function openResumeModal() {
+      selectedSession = SESSIONS[0];
+      $("resumeSearch").value = "";
+      renderSessions("");
+      openModal(resumeModal, $("sessionList").querySelector(".pick-item") || $("resumeSearch"));
+    }
+    function resumeSession(s, direct) {
+      state.session = s;
+      state.inCodex = true;
+      state.compacted = false;
+      setPrompt();
+      if (!direct) beginView(null);
+      printResult("Відновлено: «" + s.title + "»", '<span class="line-muted">' + esc(s.ago) + " · гілка " + esc(s.branch) + '</span><br><span class="line-muted">Історію розмови завантажено — продовжуй з того ж місця. Спробуй /diff.</span>', "purple",
+        direct ? "codex resume --last — без списку, остання сесія з поточної папки." : "Сесію обрано зі списку.");
+      if (!direct) flushView("codex · " + s.title);
+    }
+    function confirmResume() {
+      if (!selectedSession) return;
+      closeModal(resumeModal);
+      resumeSession(selectedSession, false);
+      cmdInput.focus();
+    }
+    $("resumeSearch").addEventListener("input", function () { renderSessions($("resumeSearch").value); });
+    $("resumeConfirm").addEventListener("click", confirmResume);
+    $("resumeCancel").addEventListener("click", function () { closeModal(resumeModal); });
+    resumeModal.addEventListener("click", function (e) { if (e.target === resumeModal) closeModal(resumeModal); });
+    resumeModal.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && e.target.id === "resumeSearch") { e.preventDefault(); var b = $("sessionList").querySelector(".pick-item"); if (b) b.click(); confirmResume(); return; }
+      trapKeys(resumeModal, confirmResume, e);
+    });
+
+    var permModal = $("permModal"), selectedPreset = "auto";
+    function openPermModal() {
+      selectedPreset = state.preset;
+      var list = $("permList");
+      list.innerHTML = PRESETS.map(function (p) {
+        var sel = p.id === selectedPreset;
+        return '<button type="button" class="pick-item' + (p.id === "full-access" ? " risk-high" : "") + (sel ? " selected" : "") + '" data-id="' + p.id + '" aria-pressed="' + sel + '">' +
+          esc(p.label) + (p.id === "full-access" ? " ⚠" : "") + "<small>" + esc(p.desc) + "</small></button>";
+      }).join("");
+      Array.prototype.forEach.call(list.querySelectorAll(".pick-item"), function (el) {
+        el.addEventListener("click", function () {
+          selectedPreset = el.getAttribute("data-id");
+          Array.prototype.forEach.call(list.querySelectorAll(".pick-item"), function (b) { var on = b === el; b.classList.toggle("selected", on); b.setAttribute("aria-pressed", on); });
+        });
+      });
+      openModal(permModal, list.querySelector(".selected") || list.querySelector(".pick-item"));
+    }
+    function confirmPerm() {
+      state.preset = selectedPreset;
+      closeModal(permModal);
+      var p = presetById(state.preset);
+      beginView(null);
+      if (p.id === "full-access") {
+        printResult("Permissions: Full Access", '<span class="line-err">⚠ Без sandbox і без підтверджень: Codex редагує файли поза проєктом і ходить в інтернет без запиту.</span>', "danger",
+          "Високий ризик. Повернись до Default (Auto) через /permissions, щойно задача, що вимагала доступу, завершена.");
+      } else {
+        printResult("Permissions: " + p.label, '<span class="line-ok">✓ ' + esc(p.desc) + "</span><br><span class=\"line-muted\">sandbox=" + esc(p.sandbox) + " · approval=" + esc(p.approval) + "</span>", "ok", "Перевір /status — там видно активну політику.");
+      }
+      flushView("codex · permissions: " + p.label);
+      cmdInput.focus();
+    }
+    $("permConfirm").addEventListener("click", confirmPerm);
+    $("permCancel").addEventListener("click", function () { closeModal(permModal); });
+    permModal.addEventListener("click", function (e) { if (e.target === permModal) closeModal(permModal); });
+    permModal.addEventListener("keydown", function (e) { trapKeys(permModal, confirmPerm, e); });
+
+    /* ---------- тест-режим ---------- */
+    function shuffle(arr) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+      return a;
+    }
+    function buildTestQueue() {
+      var seen = {}, items = [];
+      MODULE_LIST.forEach(function (m) {
+        m.commands.forEach(function (c) {
+          if (seen[c[0]] || seen[c[1]]) return;
+          seen[c[0]] = 1; seen[c[1]] = 1;
+          items.push({ cmd: c[0], hint: c[1] });
+        });
+      });
+      return shuffle(items);
+    }
+    function updateTestButton() {
+      var btn = $("btnTest");
+      btn.textContent = state.testMode.active ? "Зупинити тест" : "Режим тестування";
+      btn.classList.toggle("active", state.testMode.active);
+      btn.setAttribute("aria-pressed", state.testMode.active ? "true" : "false");
+      $("btnSkip").hidden = !state.testMode.active;
+    }
+    function showTestQuestion() {
+      var tm = state.testMode, q = tm.queue[tm.index];
+      if (!q) { finishTestMode(); return; }
+      tm.answered = false;
+      beginView(null);
+      printResult("Тест " + (tm.index + 1) + "/" + tm.queue.length, '<div class="test-question">Яка команда: <em>' + esc(q.hint) + '</em></div><span class="line-muted">Введи команду повністю (з аргументами, якщо вони є) і Enter, або натисни «Пропустити». Правильно: ' + tm.correct + ", помилок: " + tm.wrong + "</span>", "purple");
+      flushView("Тест · " + (tm.index + 1) + "/" + tm.queue.length);
+      promptLabel.textContent = "test ›";
+    }
+    function startTestMode() {
+      state.testMode = { active: true, queue: buildTestQueue(), index: 0, correct: 0, wrong: 0, answered: false };
+      updateTestButton();
+      showTestQuestion();
+      cmdInput.focus();
+    }
+    function stopTestMode() { state.testMode.active = false; updateTestButton(); setPrompt(); welcome(); }
+    function finishTestMode() {
+      var tm = state.testMode, total = tm.queue.length, pct = total ? Math.round(tm.correct / total * 100) : 0;
+      beginView(null);
+      printResult("Тест завершено", '<span class="line-ok">Правильно: ' + tm.correct + " / " + total + '</span><br><span class="line-warn">Помилок / пропущено: ' + tm.wrong + '</span><br><span class="line-hl">Результат: ' + pct + "%</span>", pct >= 80 ? "ok" : "warn");
+      flushView("Тест завершено");
+      tm.active = false;
+      updateTestButton();
+      setPrompt();
+    }
+    function nextTestQuestion() { state.testMode.index++; showTestQuestion(); }
+    function handleTestAnswer(cmd) {
+      var tm = state.testMode, q = tm.queue[tm.index];
+      if (!q || tm.answered) return;
+      tm.answered = true;
+      viewChunks = ['<div class="line-user">test › ' + esc(cmd) + "</div>"];
+      if (matches(cmd, q.cmd)) { tm.correct++; printResult("✓ Правильно!", '<span class="line-ok">' + esc(q.cmd) + "</span>", "ok", q.hint); }
+      else { tm.wrong++; printResult("✗ Ні", '<span class="line-err">Очікувалось: ' + esc(q.cmd) + "</span>", "warn", q.hint); }
+      flushView("Тест · " + tm.correct + "✓ " + tm.wrong + "✗");
+      setTimeout(function () { if (state.testMode.active && state.testMode.queue[tm.index] === q) nextTestQuestion(); }, 1500);
+    }
+    function skipTestQuestion() {
+      var tm = state.testMode;
+      if (!tm.active) return;
+      var q = tm.queue[tm.index];
+      if (q && !tm.answered) { tm.wrong++; }
+      nextTestQuestion();
+      cmdInput.focus();
+    }
+
+    /* ---------- init ---------- */
+    function welcome() {
+      beginView(null);
+      printResult("Тренажер Codex CLI", '<span class="line-muted">Емуляція без API: нічого не виконується на твоєму комп\'ютері.</span><br><br>' +
+        'Ти в shell (<span class="line-cmd">' + esc(SHELL_PROMPT) + '</span>). Запусти сесію: <span class="line-cmd">codex</span>. ' +
+        'Всередині сесії запрошення — <span class="line-cmd">' + esc(CODEX_PROMPT) + '</span>, там працюють slash-команди.<br>' +
+        '<span class="line-muted">Поточний розділ: ' + esc(getModule().title) + "</span>", "purple",
+        "Порядок у реальній роботі: git status (чисто?) → codex → робота → /diff і /review → /quit → git diff --stat → коміт.");
+      flushView("shell · " + getModule().title);
+    }
+    if (/[?&]embed=1/.test(location.search)) document.body.classList.add("embed");
+
+    $("cmdForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      execute(cmdInput.value);
+      cmdInput.value = "";
+    });
+    cmdInput.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (state.histIdx > 0) { state.histIdx--; cmdInput.value = state.history[state.histIdx] || ""; }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (state.histIdx < state.history.length - 1) { state.histIdx++; cmdInput.value = state.history[state.histIdx] || ""; }
+        else { state.histIdx = state.history.length; cmdInput.value = ""; }
+      } else if (e.key === "Tab" && !e.shiftKey) {
+        var val = cmdInput.value;
+        if (!val.trim()) return;
+        var pool = getModule().commands.concat(Object.keys(SLASH_META));
+        var match = pool.filter(function (c) { return c.indexOf(val) === 0 && c !== val; })[0];
+        if (match) { e.preventDefault(); cmdInput.value = match; }
+      } else if (e.ctrlKey && (e.key === "c" || e.key === "C") && !cmdInput.value && !String(window.getSelection ? window.getSelection() : "") && state.inCodex && !state.testMode.active) {
+        e.preventDefault();
+        beginView("^C");
+        exitSession("Ctrl+C", '<span class="line-muted">Сесію перервано.</span>', "warn", "У реальному Codex Ctrl+C перериває поточну дію або закриває сесію — залежно від стану.");
+        flushView("shell · " + getModule().title);
+      }
+    });
+    $("btnTest").addEventListener("click", function () { if (state.testMode.active) stopTestMode(); else startTestMode(); });
+    $("btnSkip").addEventListener("click", skipTestQuestion);
+    $("btnStart").addEventListener("click", function () {
+      if (state.testMode.active) { state.testMode.active = false; updateTestButton(); }
+      state.inCodex = false; state.preset = "auto"; state.model = "gpt-5.6-terra"; state.agentsMd = false; state.compacted = false; state.session = null; state.extraDirs = [];
+      setPrompt(); welcome(); cmdInput.focus();
+    });
+    $("btnResetProgress").addEventListener("click", function () {
+      if (!confirm("Скинути прогрес усіх розділів тренажера?")) return;
+      Object.keys(state.triedByModule).forEach(function (k) { state.triedByModule[k].clear(); });
+      saveProgress(); buildChecklist();
+    });
+
+    loadProgress();
+    buildChecklist();
+    setPrompt();
+    welcome();
+  </script>
+</body>
+</html>

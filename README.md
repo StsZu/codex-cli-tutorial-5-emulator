@@ -1,56 +1,56 @@
-# Codex CLI Tutorial #5 — Interactive Emulator
+# Codex CLI Course — OpenAI Codex CLI українською
 
-Україномовний інтерактивний тренажер slash-команд OpenAI Codex CLI на основі [уроку #5](https://youtu.be/htNz7uazonY) (CLI Commands & Resuming Sessions).
+Україномовний курс і інтерактивний тренажер OpenAI Codex CLI: запуск, контекст, моделі, дозволи й sandbox, робота з кодом, сесії, розширення (MCP, skills, hooks) і `codex exec`. Зміст звірено з офіційною довідкою slash-команд ([command.md](command.md)) і документацією OpenAI.
 
-**Не потребує API** — один HTML-файл, працює локально в браузері.
+**Головна мета — не вивчити всі команди, а навчитися швидко знаходити потрібну команду, розуміти її ризик і застосовувати її в реальному сценарії.**
+
+**Не потребує API** — статичні HTML-файли, працює локально в браузері (`file://`) і на GitHub Pages.
 
 ## Швидкий старт
 
 ```bash
-git clone git@github.com:StsZu/codex-cli-tutorial-5-emulator.git
-cd codex-cli-tutorial-5-emulator
 open index.html   # macOS
 ```
 
-Або відкрий `index.html` подвійним кліком.
+GitHub Pages: **https://stszu.github.io/codex-cli-tutorial-5-emulator/**
 
-## Модулі тренування
+## Що всередині
 
-| Розділ | Як увійти | Що тренуємо |
-|--------|-----------|-------------|
-| **Урок 5 — CLI основи** | старт | `/init`, `/status`, `/approvals`, `/model`, `/compact`, `/diff`, `/mcp`, … |
-| **Документація & README** | `codex resume` → Add README summary | markdown, `/export`, `/branch` |
-| **Frontend & CSS** | `codex resume` → Fix navbar | `/review`, `/undo`, `/sandbox` |
-| **Backend & Auth** | `codex resume` → Refactor auth | `/config`, `/tokens`, MCP |
+| Файл | Опис |
+|------|------|
+| [index.html](index.html) | Курс: 8 модулів, 10 уроків, quiz, фінальний іспит, шпаргалка, словник (генерується з `course-config.js` і `lessons/*.js`) |
+| [trainer.html](trainer.html) | Тренажер-емулятор Codex CLI (shell + сесія, 8 розділів, тест-режим) |
+| [command.md](command.md) | Копія офіційної довідки slash-команд — джерело правди |
+| [docs/](docs/) | Архів: конспект і транскрипт відео-уроку #5 |
 
-## Можливості
+## Розділи тренажера
 
-- Slash-команди з українськими поясненнями (жовтий hint під результатом)
-- Прогрес по кожному розділу окремо
-- `codex resume` з пошуком сесій і переходом у підрозділи
-- Клавіатура: `↑`/`↓` історія, `Tab` автодоповнення
-- GitHub Pages ready — статичний HTML
+| Розділ | Що тренуємо |
+|--------|-------------|
+| 1. Запуск і перші кроки | `codex --version`, `codex`, `/`, `/status`, `/quit`, `/exit` |
+| 2. Контекст | `/init`, `/mention`, `/ide`, `codex -i`, `codex --add-dir` |
+| 3. Моделі й налаштування | `/model`, `codex -m`, `/fast`, `/personality`, `/debug-config`, `/statusline`, `/theme`, `/experimental` |
+| 4. Дозволи й sandbox | `/permissions` (Read Only / Default (Auto) / Full Access), `--sandbox`, `--ask-for-approval`, `/approve`, `--dangerously-bypass-approvals-and-sandbox` (`--yolo`, високий ризик), `/setup-default-sandbox`, `/sandbox-add-read-dir` |
+| 5. Робота з кодом | `git status`, `/plan`, `/goal`, `/diff`, `/review`, `/copy`, `/raw`, `git diff --stat` |
+| 6. Сесії | `codex resume`, `codex resume --last`, `/resume`, `/compact`, `/new`, `/clear`, `/fork`, `/side`, `/btw`, `/archive`, `/delete` |
+| 7. Розширення | `codex mcp list`, `/mcp`, `/apps`, `/plugins`, `/skills`, `/hooks`, `/memories`, `/agent`, `/ps`, `/stop`, `/import` |
+| 8. Автоматизація й акаунт | `codex exec`, `--json`, `--sandbox read-only`, `codex exec resume --last`, `/usage`, `/feedback`, `/logout`, `codex login` |
 
-## GitHub Pages
+Окремих команд `/help`, `/undo`, `/export`, `/branch`, `/sandbox`, `/config`, `/tokens` в офіційній довідці немає: список команд — `/`, відкат змін — через Git, налаштування — `config.toml` і `/debug-config`, токени — `/status` і `/usage`.
 
-У Settings → Pages → Source: **Deploy from branch** → `main` → `/ (root)`.
+## Можливості тренажера
 
-URL: `https://stszu.github.io/codex-cli-tutorial-5-emulator/`
+- Емуляція shell і сесії Codex (запрошення `%` і `codex ›`), вихід через `/quit`
+- Строга перевірка: зараховується лише точна команда або явний синонім
+- Прогрес розділів зберігається в браузері (localStorage)
+- `codex resume` / `/resume` — вибір сесії, `/permissions` — вибір пресета
+- Тест-режим з кнопкою «Пропустити»; `↑`/`↓` — історія, `Tab` — автодоповнення
 
-## Структура
+## Джерела
 
-```
-index.html          # емулятор (весь UI + логіка)
-docs/
-  lesson-notes.md   # конспект уроку
-  transcript-en-uk.md
-  tts-uk.txt        # текст для озвучки
-```
-
-## Джерело відео
-
-- YouTube: https://youtu.be/htNz7uazonY
-- Автор оригінального туторіалу — не OpenAI; емулятор створено для навчання.
+- OpenAI — Codex CLI, slash commands, command reference, approvals & security
+- GitHub: https://github.com/openai/codex
+- Відео-урок #5 (не від OpenAI): https://youtu.be/htNz7uazonY
 
 ## Ліцензія
 

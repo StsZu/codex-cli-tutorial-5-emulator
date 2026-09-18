@@ -117,7 +117,7 @@ At the time of recording, there is **no built-in way to delete old sessions** in
 |---------|---------|
 | `/init` | Create `agents.md` |
 | `/status` | Session info (workspace, model, tokens) |
-| `/approvals` | Auto / read-only / full access |
+| `/permissions` (у відео — `/approvals`, стара назва) | Read Only / Default (Auto) / Full Access |
 | `/model` | Choose OpenAI model & reasoning level |
 | `/new` | New session |
 | `/compact` | Compress chat history |
