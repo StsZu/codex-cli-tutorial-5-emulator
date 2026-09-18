@@ -1,3 +1,5 @@
+> **Архів (до 2026-09).** Цей матеріал — стара версія і може містити застарілі твердження (моделі, прапорці, назви команд). Актуальний курс — `index.html`.
+
 # Slash commands in Codex CLI
 
 Slash commands give you fast, keyboard-first control over Codex. Type `/` in

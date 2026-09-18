@@ -18,14 +18,14 @@ window.CLI_COURSE.modules.push({
           ] },
         { type: "terminal", title: "Спробуй: аналіз без змін",
           task: "Потрібен звіт про всі TODO у проєкті, але без жодних змін у файлах. Запусти `codex exec` лише з читанням і промптом `\"Знайди TODO у проєкті\"`.",
-          expected: ["codex exec --sandbox read-only \"Знайди TODO у проєкті\"", "codex exec -s read-only \"Знайди TODO у проєкті\""],
+          expected: ["codex exec --sandbox read-only \"Знайди TODO у проєкті\"", "codex exec -s read-only \"Знайди TODO у проєкті\"", "codex exec \"Знайди TODO у проєкті\" --sandbox read-only", "codex exec \"Знайди TODO у проєкті\" -s read-only", "codex exec --sandbox=read-only \"Знайди TODO у проєкті\"", "codex e --sandbox read-only \"Знайди TODO у проєкті\"", "codex e -s read-only \"Знайди TODO у проєкті\""],
           output: "src/app.js:12  TODO: обробити помилку мережі\nsrc/auth.js:40 TODO: прибрати старий токен-флоу",
           hint: "Той самий прапорець sandbox, що й в інтерактивному запуску; промпт — у лапках наприкінці.",
           explain: "Агент лише читав — ніяких змін у робочому дереві. Для CI це найбезпечніший старт." },
         { type: "check", title: "Застарілий прапорець",
           question: "Старий скрипт використовує `codex exec --full-auto`. Що з ним зараз?",
-          options: ["Це найбезпечніший режим", "Він вимикає модель", "Прапорець застарів — документація радить `--sandbox workspace-write`"],
-          correct: 2, feedback: "Codex друкує попередження; оновлюй скрипти на явний `--sandbox`." },
+          options: ["Це найбезпечніший режим", "Він вимикає модель", "Прапорець видалено: Codex завершиться з помилкою аргументу — заміни на `--sandbox workspace-write`"],
+          correct: 2, feedback: "`--full-auto` прибрали з `codex exec` (PR #36054, липень 2026): тепер це `unexpected argument`. Оновлюй скрипти на явний `--sandbox`." },
         { type: "callout", variant: "warning", title: "exec + повний доступ",
           body: "<p>У скриптах ніхто не побачить запит дозволу. Не поєднуй <code>codex exec</code> з <code>--dangerously-bypass-approvals-and-sandbox</code> поза ізольованим CI-контейнером; задавай мінімальний <code>--sandbox</code>.</p>" },
         { type: "cli", title: "Акаунт і використання",
@@ -39,7 +39,7 @@ window.CLI_COURSE.modules.push({
           options: ["`/logout` (або `codex logout`), щоб прибрати локальні облікові дані", "Лише закрити вікно терміналу", "`/compact`"],
           correct: 0, feedback: "Закрите вікно не видаляє збережений вхід." },
         { type: "summary", title: "Підсумок",
-          points: ["`codex exec \"…\"` — одна задача без TUI, результат у stdout.", "У скриптах права задавай наперед: `--sandbox read-only` для аналізу.", "`--json` — події для обробки; `exec resume --last` — продовжити.", "`--full-auto` застарів; `/logout` — на спільних машинах."] }
+          points: ["`codex exec \"…\"` — одна задача без TUI, результат у stdout.", "У скриптах права задавай наперед: `--sandbox read-only` для аналізу.", "`--json` — події для обробки; `exec resume --last` — продовжити.", "`--full-auto` видалено — пиши `--sandbox workspace-write`; `/logout` — на спільних машинах."] }
       ],
       glossary: [
         { term: "Неінтерактивний режим", def: "Запуск без діалогу: задача → виконання → вихід." },
@@ -52,7 +52,7 @@ window.CLI_COURSE.modules.push({
         { question: "Який запуск безпечний для CI-звіту без змін у файлах?", options: ["`codex exec --yolo \"…\"`", "`codex exec --full-auto \"…\"`", "`codex exec --sandbox read-only \"…\"`"], correct: 2, feedback: "Лише читання — нічого не зміниться." },
         { question: "Навіщо `--json` у `codex exec`?", options: ["Щоб скрипт міг розібрати події рядок за рядком", "Щоб змінити модель", "Щоб зашифрувати вивід"], correct: 0, feedback: "Людині зручніший текст, програмі — JSON Lines." },
         { question: "Як продовжити останню exec-сесію?", options: ["`codex resume`", "`codex exec resume --last`", "`/resume --exec`"], correct: 1, feedback: "`exec resume` — окрема підкоманда exec." },
-        { question: "Що з'явиться, якщо запустити застарілий `--full-auto`?", options: ["Помилка й видалення файлів", "Нічого", "Попередження про застарілий прапорець"], correct: 2, feedback: "Документація: «Codex prints a warning», радить `--sandbox workspace-write`." },
+        { question: "Що станеться, якщо в актуальній версії запустити `codex exec --full-auto \"…\"`?", options: ["Видалення файлів", "Запуск у Full Access", "Помилка аргументу `unexpected argument '--full-auto'` — прапорець видалено"], correct: 2, feedback: "Прапорець прибрали з CLI; заміна — `--sandbox workspace-write`." },
         { question: "Коли варто перевірити сесію перед `/feedback`?", options: ["Завжди: логи йдуть розробникам — у них не має бути секретів", "Ніколи", "Лише вночі"], correct: 0, feedback: "Діагностика може містити фрагменти розмови." }
       ]
     },

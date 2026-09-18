@@ -20,7 +20,7 @@ window.CLI_COURSE.modules.push({
           ] },
         { type: "terminal", title: "Спробуй: безпечний аналіз",
           task: "Тобі дали чужий репозиторій. Запусти Codex так, щоб він міг лише читати файли.",
-          expected: ["codex --sandbox read-only", "codex -s read-only"],
+          expected: ["codex --sandbox read-only", "codex -s read-only", "codex --sandbox read-only --ask-for-approval on-request", "codex -s read-only -a on-request", "codex --sandbox read-only -a on-request", "codex -s read-only --ask-for-approval on-request", "codex --ask-for-approval on-request --sandbox read-only", "codex -a on-request -s read-only"],
           output: "● OpenAI Codex\n  model: gpt-5.6-terra · directory: ~/Projects/demo-app\n  permissions: Read Only",
           hint: "Прапорець sandbox із режимом «лише читання».",
           explain: "У режимі `read-only` агент аналізує й пропонує, але кожна зміна чи мережевий запит проходить через тебе." },
@@ -55,7 +55,7 @@ window.CLI_COURSE.modules.push({
         { question: "Що означає `-s workspace-write`?", options: ["Запис у будь-яку папку", "Лише читання", "Запис дозволено в межах робочої папки"], correct: 2, feedback: "Писати можна в робочу папку (і додані через `--add-dir`)." },
         { question: "Ти перемкнув пресет через `/permissions`. Як довго він діє?", options: ["Лише одну команду", "Доки не зміниш знову", "До перезавантаження ОС"], correct: 1, feedback: "Нова політика діє для наступних дій, поки ти її не зміниш." },
         { question: "Навіщо запускати незнайомий репозиторій з `--sandbox read-only`?", options: ["Щоб агент міг лише аналізувати, нічого не змінюючи без тебе", "Щоб прискорити роботу", "Щоб вимкнути модель"], correct: 0, feedback: "Спершу зрозумій код, потім давай права на зміни." },
-        { question: "Як у новіших версіях Codex називається середній пресет?", options: ["Safe", "Agent Only", "Default (у довідці — Auto)"], correct: 2, feedback: "Назва змінилася між версіями, суть та сама: робота в межах робочої папки." }
+        { question: "Ти запустив `codex -s read-only -a never`, і агент хоче змінити файл. Що станеться?", options: ["Codex спитає дозволу", "Зміна не виконається: sandbox забороняє запис, а питати Codex не буде — помилку одразу отримає модель", "Файл зміниться, бо `never` вимикає обмеження"], correct: 1, feedback: "`-a never` вимикає лише запити; межі sandbox лишаються. Повну свободу дає тільки `danger-full-access` або `--yolo`." }
       ]
     },
     {
@@ -87,7 +87,7 @@ window.CLI_COURSE.modules.push({
           intro: "<p>На macOS Codex використовує Seatbelt, на Linux — <code>bwrap</code>. Для нативного Windows є окремі команди.</p>",
           commands: [
             { cmd: "/setup-default-sandbox", explain: "Налаштовує посилений sandbox агента (лише Windows).", risk: "medium" },
-            { cmd: "/sandbox-add-read-dir C:\\Projects\\shared", explain: "Дає sandbox читання ще однієї абсолютної папки (лише Windows).", risk: "medium" }
+            { cmd: "/sandbox-add-read-dir C:\\Projects\\shared", explain: "Дає sandbox читання ще однієї абсолютної папки (лише Windows). Є в документації, але в коді свіжих версій її може не бути — перевір меню <code>/</code>.", risk: "medium" }
           ] },
         { type: "check", title: "Прапорець і пресет",
           question: "Що спільного між пресетом Full Access і `--dangerously-bypass-approvals-and-sandbox`?",

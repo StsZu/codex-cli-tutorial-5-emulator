@@ -6,10 +6,11 @@ window.CLI_COURSE_CONFIG = {
   brandSub: "курс Codex CLI",
   storageKey: "cli-codex-cli-v1",
   caseInsensitive: false,
-  prompt: "stas@MacBook-Pro demo-app %",
+  prompt: "Stas@MacBook-Pro demo-app %",
   termTitle: "zsh — навчальний термінал Codex",
   sandbox: "trainer.html",
   quizBank: null,
+  factsCheckedAt: "2026-09-18",
   skills: [
     ["terminal", "Запускати Codex із shell і керувати сесією slash-командами: `/status`, `/model`, `/quit`."],
     ["description", "Давати агенту контекст: `AGENTS.md` через `/init`, файли через `/mention` і `@`."],
@@ -18,7 +19,7 @@ window.CLI_COURSE_CONFIG = {
     ["replay", "Продовжувати й прибирати сесії: `codex resume`, `/compact`, `/fork`, `/archive`."],
     ["settings", "Автоматизувати задачі через `codex exec` і підключати MCP, skills, hooks."]
   ],
-  audience: "<p>Для тих, хто вже відкривав термінал і хоче працювати з OpenAI Codex CLI — AI-агентом, який читає проєкт, редагує файли й запускає команди. Курс побудовано на офіційній довідці slash-команд (<code>command.md</code>) і документації OpenAI.</p><p>Головна мета — не вивчити всі команди, а навчитися швидко знаходити потрібну команду, розуміти її ризик і застосовувати її в реальному сценарії.</p>",
+  audience: "<p>Для тих, хто вже відкривав термінал і хоче працювати з OpenAI Codex CLI — AI-агентом, який читає проєкт, редагує файли й запускає команди. Факти курсу звірено з документацією OpenAI і кодом <code>openai/codex</code> (версія 0.155.0 і гілка main, вересень 2026); назви команд, прапорців і моделей змінюються з версіями.</p><p>Головна мета — не вивчити всі команди, а навчитися швидко знаходити потрібну команду, розуміти її ризик і застосовувати її в реальному сценарії.</p>",
   safety: "<p>Кроки «Спробуй сам» і тренажер — імітація: вони нічого не запускають і не звертаються до API. У справжньому Codex починай у режимі <strong>Read Only</strong> або <strong>Default (Auto)</strong> у чистому Git-репозиторії на окремій гілці. <strong>Full Access</strong> і <code>--dangerously-bypass-approvals-and-sandbox</code> (<code>--yolo</code>) — лише в ізольованому середовищі.</p>",
   sources: [
     { href: "https://developers.openai.com/codex/cli", label: "OpenAI — Codex CLI" },

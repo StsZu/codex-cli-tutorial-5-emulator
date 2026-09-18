@@ -15,6 +15,7 @@ window.CLI_COURSE.modules.push({
           commands: [
             { cmd: "codex resume", explain: "У shell: список збережених сесій цієї папки; стрілки — вибір, Enter — відновити, можна шукати.", risk: "low" },
             { cmd: "codex resume --last", explain: "Одразу остання сесія з поточної папки, без списку.", risk: "low" },
+            { cmd: "codex resume --all", explain: "Список сесій з усіх папок, а не лише з поточної.", risk: "low" },
             { cmd: "/resume", explain: "Той самий список, але зсередини сесії.", risk: "low" }
           ] },
         { type: "terminal", title: "Спробуй: остання сесія",
@@ -26,8 +27,8 @@ window.CLI_COURSE.modules.push({
           commands: [
             { cmd: "/compact", explain: "Стиснути історію в підсумок, звільнивши контекст.", risk: "low" },
             { cmd: "/new", explain: "Нова розмова в тому ж CLI; екран не очищується.", risk: "low" },
-            { cmd: "/clear", explain: "Очистити екран і почати нову розмову. <span class=\"kbd\">Ctrl</span>+<span class=\"kbd\">L</span> лише очищає екран, розмова лишається.", risk: "low" },
-            { cmd: "/fork", explain: "Клон поточної розмови в новий потік — спробувати інший підхід, не втративши оригінал.", risk: "low" },
+            { cmd: "/clear", explain: "Очистити екран і почати нову розмову; <code>/clear release prep</code> — одразу з назвою. <span class=\"kbd\">Ctrl</span>+<span class=\"kbd\">L</span> лише очищає екран, розмова лишається.", risk: "low" },
+            { cmd: "/fork", explain: "Клон поточної розмови в новий потік — спробувати інший підхід, не втративши оригінал. З текстом (<code>/fork Спробуй через fetch</code>) — форк з першим повідомленням. У shell: <code>codex fork --last</code>.", risk: "low" },
             { cmd: "/side", explain: "Бічна розмова для короткого питання, що не засмічує головну (синонім <code>/btw</code>).", risk: "low" }
           ] },
         { type: "check", title: "Довга сесія",

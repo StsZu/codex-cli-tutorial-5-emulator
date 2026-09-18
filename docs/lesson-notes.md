@@ -1,3 +1,5 @@
+> **Архів (до 2026-09).** Цей матеріал — стара версія і може містити застарілі твердження (моделі, прапорці, назви команд). Актуальний курс — `index.html`.
+
 # OpenAI Codex Tutorial #5 — CLI Commands & Resuming Sessions
 
 **Source:** `OpenAI Codex Tutorial #5 - CLI Commands & Resuming Sessions [htNz7uazonY].mp3`  

@@ -9,7 +9,7 @@ window.CLI_COURSE.modules.push({
         { type: "story", title: "Агент, що працює у твоїй папці",
           body: "<p>Codex CLI — AI-агент від OpenAI, який працює прямо в терміналі. Ти пишеш задачу звичайними словами, а він читає файли проєкту, пропонує й вносить зміни, запускає команди.</p><p>Керують сесією <strong>slash-команди</strong> — рядки, що починаються з <code>/</code>: <code>/status</code>, <code>/model</code>, <code>/quit</code>. Вони працюють лише всередині сесії, а не в звичайному shell.</p>" },
         { type: "concept", title: "Два «поверхи»: shell і сесія",
-          body: "<p>Коли в запрошенні <code>stas@MacBook-Pro demo-app %</code> — ти в zsh, тут працюють <code>codex</code>, <code>git</code>, <code>ls</code>. Після команди <code>codex</code> відкривається сесія: тепер текст іде агенту, а <code>/</code> відкриває меню команд.</p><p>Codex бачить <strong>папку, з якої його запустили</strong>, тож спершу <code>cd</code> у проєкт.</p>",
+          body: "<p>Коли в запрошенні <code>Stas@MacBook-Pro demo-app %</code> — ти в zsh, тут працюють <code>codex</code>, <code>git</code>, <code>ls</code>. Після команди <code>codex</code> відкривається сесія: тепер текст іде агенту, а <code>/</code> відкриває меню команд.</p><p>Codex бачить <strong>папку, з якої його запустили</strong>, тож спершу <code>cd</code> у проєкт.</p>",
           analogy: "Shell — це коридор офісу, а сесія Codex — переговорна з помічником. У коридорі ти відчиняєш двері (`codex`), у переговорній говориш із помічником і користуєшся її пультом (`/`-команди). Щоб вийти в коридор — `/quit`." },
         { type: "cli", title: "Перевірити й запустити",
           intro: "<p>Ці команди вводяться в shell.</p>",

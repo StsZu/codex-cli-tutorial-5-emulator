@@ -13,15 +13,15 @@ window.CLI_COURSE.modules.push({
           commands: [
             { cmd: "/model", explain: "Меню моделей і reasoning effort у поточній сесії. Перевір результат через <code>/status</code>.", risk: "low" },
             { cmd: "codex -m gpt-5.6-terra", explain: "Запуск сесії з конкретною моделлю (<code>--model</code>). Назва має бути з актуального списку твоєї версії.", risk: "medium" },
-            { cmd: "/fast", explain: "Вмикає/вимикає Fast-режим моделі (<code>/fast on</code>, <code>/fast off</code>, <code>/fast status</code>). Команди немає, якщо модель його не підтримує.", risk: "low" },
-            { cmd: "/personality", explain: "Стиль відповідей: <code>friendly</code>, <code>pragmatic</code> або <code>none</code>. Не змінює твої інструкції.", risk: "low" }
+            { cmd: "/fast", explain: "Перемикач Fast-режиму поточної моделі: перший <code>/fast</code> вмикає, повторний — вимикає; вибір зберігається. Аргументів не приймає. Команди немає, якщо каталог моделі не пропонує Fast.", risk: "low" },
+            { cmd: "/personality", explain: "Стиль відповідей: <code>friendly</code>, <code>pragmatic</code> або <code>none</code>. Не змінює твої інструкції. Є у версії 0.155.0, але в новіших збірках (гілка main) команду прибрано — у твоїй версії її може не бути.", risk: "low" }
           ] },
         { type: "terminal", title: "Спробуй: змінити модель",
           prompt: "codex ›",
           task: "Задача складна — хочеш переглянути доступні моделі й рівень міркувань у поточній сесії.",
-          expected: ["/model"], output: "● gpt-5.6-terra ← current\n○ gpt-6-astra\n○ gpt-5.6-sol\n○ gpt-5.6-luna\nReasoning effort: low · medium · high",
+          expected: ["/model"], output: "● gpt-5.6-terra ← current\n○ gpt-6-astra\n○ gpt-5.6-sol\n○ gpt-5.6-luna\nReasoning effort: low · medium · high · xhigh · max · ultra",
           hint: "Назва команди — англійське слово «модель».",
-          explain: "Після вибору виконай `/status`, щоб переконатися, що діє саме та модель і той рівень reasoning." },
+          explain: "Набір рівнів залежить від моделі: у родині gpt-5.6 і gpt-6-astra — від `low` до `max`, у більшості ще `ultra`. Після вибору виконай `/status`, щоб переконатися, що діє саме та модель і той рівень reasoning." },
         { type: "check", title: "Застарілий туторіал",
           question: "У відео 2025 року автор обирає модель, якої немає у твоєму `/model`. Що робити?",
           options: ["Ввести назву вручну через `-m`, доки не спрацює", "Обрати актуальну модель зі списку `/model` — набір моделей змінюється з версіями", "Перевстановити старий Codex"],
@@ -49,7 +49,7 @@ window.CLI_COURSE.modules.push({
           points: ["`/model` — модель і reasoning effort; `-m` — модель при запуску.", "Список моделей змінюється: орієнтуйся на `/model` своєї версії, а не на старі відео.", "Налаштування — `~/.codex/config.toml`; `-c key=value` перевизначає на один запуск.", "`/debug-config` показує, який шар задав значення."] }
       ],
       glossary: [
-        { term: "Reasoning effort", def: "Скільки модель «міркує» перед відповіддю: low, medium, high." },
+        { term: "Reasoning effort", def: "Скільки модель «міркує» перед відповіддю: low, medium, high, xhigh, max, а в частини моделей ще ultra. Набір залежить від моделі." },
         { term: "config.toml", def: "Файл налаштувань Codex, зазвичай `~/.codex/config.toml`." },
         { term: "Шар конфігурації", def: "Джерело налаштувань (типові, файл користувача, проєкт, прапорці); вищий перемагає." },
         { term: "Fast tier", def: "Швидший режим обслуговування моделі, якщо каталог моделі його пропонує." }
@@ -60,7 +60,7 @@ window.CLI_COURSE.modules.push({
         { question: "`/fast` не з'являється в меню. Чому?", options: ["Поточна модель не пропонує Fast-режим", "Codex зламаний", "Треба `sudo`"], correct: 0, feedback: "Команда з'являється лише для моделей, у каталозі яких є Fast." },
         { question: "Де задати модель за замовчуванням для всіх сесій?", options: ["У `AGENTS.md`", "У `.gitignore`", "У `~/.codex/config.toml` (`model = \"…\"`)"], correct: 2, feedback: "`AGENTS.md` — інструкції для агента; налаштування CLI — у config.toml." },
         { question: "Що робить `codex -c model=\"gpt-5.6-terra\"`?", options: ["Назавжди переписує config.toml", "Перевизначає значення лише на цей запуск", "Видаляє інші моделі"], correct: 1, feedback: "`-c` — тимчасове перевизначення." },
-        { question: "Що змінює `/personality`?", options: ["Стиль спілкування відповідей", "Модель", "Права доступу до файлів"], correct: 0, feedback: "`friendly`, `pragmatic` або `none` — тон, а не можливості." }
+        { question: "Що змінює `/personality` (якщо команда є у твоїй версії)?", options: ["Стиль спілкування відповідей", "Модель", "Права доступу до файлів"], correct: 0, feedback: "`friendly`, `pragmatic` або `none` — тон, а не можливості. У новіших збірках команду прибрано — перевір меню `/`." }
       ]
     }
   ]

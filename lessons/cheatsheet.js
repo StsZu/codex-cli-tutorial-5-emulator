@@ -13,8 +13,8 @@ window.CLI_COURSE.cheatsheet = {
       { cmd: "/", desc: "Меню slash-команд (окремого /help немає)", risk: "low" },
       { cmd: "/status", desc: "Модель, дозволи, sandbox, токени", risk: "low" },
       { cmd: "/quit, /exit", desc: "Вихід із сесії в shell", risk: "low" },
-      { cmd: "Esc Esc", desc: "Редагувати попереднє повідомлення (розмова, не файли)", risk: "low" },
-      { cmd: "Ctrl+O або /copy", desc: "Копіювати останню відповідь", risk: "low" }
+      { cmd: "Esc Esc", desc: "Редагувати попереднє повідомлення (розмова, не файли)", risk: "low", outsideTrainer: true },
+      { cmd: "/copy", desc: "Копіювати останню відповідь (також Ctrl+O)", risk: "low" }
     ] },
     { title: "Контекст", rows: [
       { cmd: "/init", desc: "Каркас AGENTS.md з постійними інструкціями", risk: "medium" },
@@ -24,10 +24,10 @@ window.CLI_COURSE.cheatsheet = {
       { cmd: "codex --add-dir ../shared", desc: "Ще одна папка для запису", risk: "medium" }
     ] },
     { title: "Моделі й налаштування", rows: [
-      { cmd: "/model", desc: "Модель і reasoning effort (список залежить від версії)", risk: "low" },
+      { cmd: "/model", desc: "Модель і reasoning effort: low…max, у частини моделей ultra (залежить від версії)", risk: "low" },
       { cmd: "codex -m gpt-5.6-terra", desc: "Запуск із конкретною моделлю", risk: "medium" },
-      { cmd: "/fast", desc: "Fast-режим, якщо модель його має", risk: "low" },
-      { cmd: "/personality", desc: "Стиль: friendly, pragmatic, none", risk: "low" },
+      { cmd: "/fast", desc: "Перемкнути Fast-режим (повторний /fast вимикає), якщо модель його має", risk: "low" },
+      { cmd: "/personality", desc: "Стиль: friendly, pragmatic, none (у новіших збірках може не бути)", risk: "low" },
       { cmd: "codex -c key=value", desc: "Перевизначити config.toml на один запуск", risk: "medium" },
       { cmd: "/debug-config", desc: "Шари конфігурації і джерела значень", risk: "low" },
       { cmd: "/statusline, /title, /theme, /keymap, /vim", desc: "Вигляд і керування TUI", risk: "low" },
@@ -42,14 +42,14 @@ window.CLI_COURSE.cheatsheet = {
       { cmd: "codex --dangerously-bypass-approvals-and-sandbox", desc: "Full Access: без sandbox і підтверджень — лише в ізоляції", risk: "high" },
       { cmd: "codex --yolo", desc: "Синонім попереднього — той самий високий ризик", risk: "high" },
       { cmd: "/setup-default-sandbox", desc: "Посилений sandbox (лише Windows)", risk: "medium" },
-      { cmd: "/sandbox-add-read-dir C:\\Projects\\shared", desc: "Читання ще однієї папки (лише Windows)", risk: "medium" }
+      { cmd: "/sandbox-add-read-dir C:\\Projects\\shared", desc: "Читання ще однієї папки (лише Windows; залежить від версії)", risk: "medium" }
     ] },
     { title: "Робота з кодом", rows: [
       { cmd: "git status", desc: "Чисто перед сесією?", risk: "low" },
       { cmd: "/plan", desc: "План до змін", risk: "low" },
       { cmd: "/goal <ціль>", desc: "Ціль довгої задачі; pause / resume / clear", risk: "low" },
       { cmd: "/diff", desc: "Зміни, включно з untracked-файлами", risk: "low" },
-      { cmd: "/review", desc: "Перевірка робочого дерева агентом", risk: "low" },
+      { cmd: "/review", desc: "Перевірка робочого дерева агентом (/review <інструкції> — з уточненням)", risk: "low" },
       { cmd: "/raw", desc: "Raw scrollback для копіювання", risk: "low" },
       { cmd: "git diff --stat", desc: "Які файли і скільки рядків змінено", risk: "low" },
       { cmd: "git restore <файл>", desc: "Відкинути незакомічені зміни файлу — незворотно", risk: "high" }
@@ -57,13 +57,15 @@ window.CLI_COURSE.cheatsheet = {
     { title: "Сесії", rows: [
       { cmd: "codex resume", desc: "Список збережених сесій", risk: "low" },
       { cmd: "codex resume --last", desc: "Остання сесія з поточної папки", risk: "low" },
+      { cmd: "codex resume --all", desc: "Сесії з усіх папок", risk: "low" },
       { cmd: "/resume", desc: "Список сесій зсередини", risk: "low" },
       { cmd: "/compact", desc: "Стиснути історію в підсумок", risk: "low" },
       { cmd: "/new", desc: "Нова розмова (екран лишається)", risk: "low" },
       { cmd: "/clear", desc: "Очистити екран і почати нову розмову", risk: "low" },
-      { cmd: "/fork", desc: "Копія розмови в новий потік", risk: "low" },
+      { cmd: "/fork", desc: "Копія розмови в новий потік (/fork <текст> — з першим повідомленням)", risk: "low" },
       { cmd: "/side, /btw", desc: "Бічна розмова", risk: "low" },
-      { cmd: "/archive", desc: "Архівувати й вийти; codex unarchive — повернути", risk: "medium" },
+      { cmd: "/archive", desc: "Архівувати й вийти", risk: "medium" },
+      { cmd: "codex unarchive <SESSION>", desc: "Повернути заархівовану сесію", risk: "low" },
       { cmd: "/delete", desc: "Видалити сесію й дочірні назавжди", risk: "high" }
     ] },
     { title: "Розширення", rows: [
@@ -74,10 +76,12 @@ window.CLI_COURSE.cheatsheet = {
       { cmd: "/hooks", desc: "Lifecycle-хуки; довіряй лише зрозумілим", risk: "medium" },
       { cmd: "/memories", desc: "Пам'ять між сесіями", risk: "low" },
       { cmd: "/ps, /stop", desc: "Фонові термінали: переглянути, зупинити", risk: "medium" },
-      { cmd: "/import", desc: "Імпорт налаштувань Claude Code", risk: "medium" }
+      { cmd: "/import", desc: "Імпорт налаштувань і чатів з Claude Code або Cursor", risk: "medium" },
+      { cmd: "/agents, /subagents", desc: "Перемикання між сесіями агентів і субагентами", risk: "low" }
     ] },
     { title: "Автоматизація й акаунт", rows: [
       { cmd: "codex exec \"…\"", desc: "Одна задача без TUI", risk: "medium" },
+      { cmd: "codex exec --sandbox workspace-write \"…\"", desc: "Задача зі змінами в робочій папці (замість видаленого --full-auto)", risk: "medium" },
       { cmd: "codex exec --sandbox read-only \"…\"", desc: "Аналіз без змін", risk: "low" },
       { cmd: "codex exec --json \"…\"", desc: "Події JSON Lines для скриптів", risk: "medium" },
       { cmd: "codex exec resume --last", desc: "Продовжити останню exec-сесію", risk: "medium" },

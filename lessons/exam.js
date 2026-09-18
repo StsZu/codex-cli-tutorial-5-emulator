@@ -18,7 +18,7 @@ window.CLI_COURSE.exam = {
     { question: "Стару сесію треба прибрати зі списку, але, можливо, знадобиться. Що обрати?", options: ["`/delete`", "`/archive`", "`/clear`"], correct: 1, feedback: "Архів оборотний: `codex unarchive`." },
     { question: "Сесія довга, агент губить ранні домовленості. Що допоможе?", options: ["`/logout`", "`/stop`", "`/compact`"], correct: 2, feedback: "Стискає історію в підсумок." },
     { question: "Як у shell побачити налаштовані MCP-сервери?", options: ["`codex mcp list`", "`/mcp verbose`", "`codex --mcp`"], correct: 0, feedback: "`/mcp` — у сесії, `codex mcp list` — у shell." },
-    { question: "Що безпечно для CI-звіту без змін у файлах?", options: ["`codex exec --yolo \"…\"`", "`codex exec --sandbox read-only \"…\"`", "`codex exec --full-auto \"…\"`"], correct: 1, feedback: "Лише читання; `--full-auto` застарів." },
+    { question: "Що безпечно для CI-звіту без змін у файлах?", options: ["`codex exec --yolo \"…\"`", "`codex exec --sandbox read-only \"…\"`", "`codex exec --full-auto \"…\"`"], correct: 1, feedback: "Лише читання. `--full-auto` з CLI видалено, `--yolo` вимикає захист." },
     { question: "Ти закінчив роботу на спільному комп'ютері. Що зробити?", options: ["Лише закрити термінал", "`/fork`", "`/logout` або `codex logout`"], correct: 2, feedback: "Прибирає локальні облікові дані." }
   ]
 };
